@@ -1,25 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchSpotifyTracks } from "@/lib/spotify";
+import { searchSpotify } from "@/lib/spotify";
 
 export async function GET(request: NextRequest) {
   try {
     const query = request.nextUrl.searchParams.get("q");
 
-    if (!query) {
+    if (!query || query.trim() === "") {
       return NextResponse.json(
-        { error: "検索ワードを入力してください" },
+        {
+          error: "検索ワードを入力してください",
+        },
         { status: 400 }
       );
     }
 
-    const tracks = await searchSpotifyTracks(query);
+    const searchWord = query.trim();
 
-    return NextResponse.json(tracks);
+    const { tracks, artists } = await searchSpotify(searchWord);
+
+    return NextResponse.json({
+      query: searchWord,
+      tracks,
+      artists,
+    });
   } catch (error) {
-    console.error("Spotify API Error:", error);
+    console.error("Spotify Search Error:", error);
 
     return NextResponse.json(
-      { error: "Spotify APIの取得に失敗しました" },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "検索に失敗しました",
+      },
       { status: 500 }
     );
   }
