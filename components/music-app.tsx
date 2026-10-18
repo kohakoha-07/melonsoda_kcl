@@ -1,0 +1,773 @@
+"use client";
+
+import Link from "next/link";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import { people, posts, type Track } from "@/lib/workshop/data";
+import { publishPost, submitAuth } from "@/lib/workshop/actions";
+
+type Screen = "home" | "search" | "following" | "profile" | "login" | "signup";
+const navigation: {
+  screen: Screen;
+  href: string;
+  icon: string;
+  text: string;
+}[] = [
+  { screen: "home", href: "/", icon: "⌂", text: "ホーム" },
+  { screen: "search", href: "/search", icon: "⌕", text: "音楽をさがす" },
+  { screen: "following", href: "/following", icon: "♧", text: "フォロー" },
+  { screen: "profile", href: "/profile", icon: "☺", text: "プロフィール" },
+];
+
+function Reveal({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || !window.IntersectionObserver) return;
+    element.classList.add("reveal-ready");
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          element.classList.add("revealed");
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.08 },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className="reveal">
+      {children}
+    </div>
+  );
+}
+
+function Player({ track, color = "pink" }: { track: Track; color?: string }) {
+  const audio = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState("");
+  function stop() {
+    audio.current?.pause();
+    setPlaying(false);
+  }
+  async function toggle() {
+    if (playing) {
+      stop();
+      return;
+    }
+    const element = audio.current;
+    if (!element || !track.previewUrl) return;
+    setError("");
+    try {
+      // 同時に複数の曲が鳴らないよう、ほかのプレイヤーを停止。
+      document.querySelectorAll("audio").forEach((other) => {
+        if (other !== element) other.pause();
+      });
+      element.currentTime = 0;
+      await element.play();
+    } catch {
+      setError("試聴を再生できませんでした。Spotifyで聴いてみてください。");
+      setPlaying(false);
+    }
+  }
+  return (
+    <div className={`player ${color}`}>
+      <div className="record-stage" aria-hidden="true">
+        <span className="deck-brand">MELOOP / 33⅓ RPM</span>
+        <div className={`record ${playing ? "spinning" : ""}`}>
+          <div className="record-label">
+            <span>meloop</span>
+            <b>♪</b>
+            <i />
+          </div>
+        </div>
+        <div className={`tonearm ${playing ? "on" : ""}`} />
+        <span className="deck-light" />
+      </div>
+      <div className="track-info">
+        <span className="eyebrow">TODAY’S ONE SONG</span>
+        <h3>{track.name}</h3>
+        <p>{track.artist}</p>
+        <div className="player-controls">
+          <button
+            className="play-button"
+            onClick={toggle}
+            disabled={!track.previewUrl}
+            aria-label={playing ? "試聴を停止" : `${track.name}を試聴`}
+          >
+            {playing ? "Ⅱ" : "▶"}
+          </button>
+          <div className="play-progress">
+            <span>{track.previewUrl ? "15秒の試聴" : "試聴音源なし"}</span>
+            <div className="progress-line">
+              <i style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+          <span className="tiny-note">♫</span>
+        </div>
+        <a
+          className="spotify-link"
+          href={track.spotifyUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Spotifyで聴く ↗
+        </a>
+        {error && (
+          <p className="inline-error" role="status">
+            {error}
+          </p>
+        )}
+      </div>
+      {track.previewUrl && (
+        <audio
+          ref={audio}
+          src={track.previewUrl}
+          preload="none"
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => {
+            setPlaying(false);
+            setProgress(0);
+          }}
+          onError={() => {
+            setPlaying(false);
+            setError("音源にアクセスできません。Spotifyで聴いてみてください。");
+          }}
+          onTimeUpdate={() => {
+            const time = audio.current?.currentTime ?? 0;
+            setProgress(Math.min((time / 15) * 100, 100));
+            if (time >= 15) {
+              stop();
+              if (audio.current) audio.current.currentTime = 0;
+              setProgress(0);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function Reactions() {
+  // TODO(B): post_id と認証ユーザーを使ってSupabaseへ保存・取得。
+  const [selected, setSelected] = useState<string[]>([]);
+  return (
+    <div className="reactions" aria-label="絵文字でリアクション（デモ）">
+      {["🤍", "🥰", "🎧", "✨", "🔥"].map((emoji, index) => (
+        <button
+          key={emoji}
+          aria-label={`${emoji}でリアクション`}
+          aria-pressed={selected.includes(emoji)}
+          onClick={() =>
+            setSelected((old) =>
+              old.includes(emoji)
+                ? old.filter((value) => value !== emoji)
+                : [...old, emoji],
+            )
+          }
+        >
+          {emoji}
+          <span>
+            {[12, 5, 8, 3, 2][index] + (selected.includes(emoji) ? 1 : 0)}
+          </span>
+        </button>
+      ))}
+      <span className="reaction-hint">気持ちをのせよう</span>
+    </div>
+  );
+}
+
+function Post({ post }: { post: (typeof posts)[number] }) {
+  return (
+    <Reveal>
+      <article className="post-card">
+        <header className="post-author">
+          <span className={`avatar ${post.person.color}`}>
+            {post.person.icon}
+          </span>
+          <div>
+            <b>{post.person.name}</b>
+            <span>@{post.person.handle}</span>
+          </div>
+          <time>{post.time}</time>
+        </header>
+        <p className="post-text">{post.text}</p>
+        <Player track={post.track} color={post.color} />
+        <div className="post-tag">{post.tag}</div>
+        <Reactions />
+      </article>
+    </Reveal>
+  );
+}
+
+type SpotifyTrack = {
+  id: string;
+  name: string;
+  artists: { name: string }[];
+  preview_url?: string | null;
+  external_urls?: { spotify?: string };
+};
+type SpotifyArtist = {
+  id: string;
+  name: string;
+  external_urls?: { spotify?: string };
+};
+function Search() {
+  const [query, setQuery] = useState("");
+  const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
+  const [artists, setArtists] = useState<SpotifyArtist[]>([]);
+  const [state, setState] = useState(
+    "気になる曲名やアーティスト名を入力してみよう。",
+  );
+  const [loading, setLoading] = useState(false);
+  async function search(event: FormEvent) {
+    event.preventDefault();
+    if (!query.trim()) {
+      setState("検索ワードを入力してください。");
+      return;
+    }
+    setLoading(true);
+    setTracks([]);
+    setArtists([]);
+    setState("");
+    try {
+      const response = await fetch(
+        `/api/spotify/search?q=${encodeURIComponent(query.trim())}`,
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "検索に失敗しました。");
+      setTracks(data.tracks ?? []);
+      setArtists(data.artists ?? []);
+      setState(
+        data.tracks?.length || data.artists?.length
+          ? "Spotifyの検索結果"
+          : "見つかりませんでした。別の言葉でもう一度どうぞ。",
+      );
+    } catch (error) {
+      setState(error instanceof Error ? error.message : "通信に失敗しました。");
+    } finally {
+      setLoading(false);
+    }
+  }
+  return (
+    <>
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">FIND YOUR NEXT FAVORITE</span>
+          <h2>
+            次の「好き」をさがそう <span>⌕</span>
+          </h2>
+        </div>
+      </div>
+      <form onSubmit={search} className="search-box">
+        <label className="sr-only" htmlFor="music-query">
+          曲名・アーティスト名
+        </label>
+        <span aria-hidden="true">⌕</span>
+        <input
+          id="music-query"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="曲名・アーティスト名で検索"
+          maxLength={200}
+        />
+        <button className="button primary" disabled={loading}>
+          {loading ? "検索中…" : "検索"}
+        </button>
+      </form>
+      <p className="status" role="status">
+        {state}
+      </p>
+      {artists.length > 0 && (
+        <section className="artist-section">
+          <h3>アーティスト</h3>
+          <div className="artist-results">
+            {artists.map((artist) => (
+              <a
+                key={artist.id}
+                href={
+                  artist.external_urls?.spotify ??
+                  `https://open.spotify.com/artist/${artist.id}`
+                }
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span>♫</span>
+                {artist.name} ↗
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+      {tracks.map((track) => (
+        <Reveal key={track.id}>
+          <article className="search-result">
+            <Player
+              track={{
+                id: track.id,
+                name: track.name,
+                artist: track.artists.map((artist) => artist.name).join(" / "),
+                previewUrl: track.preview_url ?? null,
+                spotifyUrl:
+                  track.external_urls?.spotify ??
+                  `https://open.spotify.com/track/${track.id}`,
+              }}
+              color="blue"
+            />
+          </article>
+        </Reveal>
+      ))}
+      <p className="small-print">
+        音楽情報：Spotify · 試聴音源が提供される曲のみ短く再生できます。
+      </p>
+    </>
+  );
+}
+
+function Following() {
+  // TODO(B): follow関係を保存・取得。この状態は更新するとリセットされます。
+  const [following, setFollowing] = useState<string[]>(["hina"]);
+  return (
+    <>
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">YOUR MUSIC PEOPLE</span>
+          <h2>
+            音楽の好みで、つながろう <span>♧</span>
+          </h2>
+        </div>
+      </div>
+      <p className="status">
+        フォロー中 {following.length} 人 · サンプルユーザー
+      </p>
+      {people.map((person) => (
+        <Reveal key={person.id}>
+          <article className="person-card">
+            <span className={`avatar large ${person.color}`}>
+              {person.icon}
+            </span>
+            <div>
+              <h3>{person.name}</h3>
+              <span className="muted">@{person.handle}</span>
+              <p>{person.bio}</p>
+            </div>
+            <button
+              className={`button ${following.includes(person.id) ? "soft" : "primary"}`}
+              aria-pressed={following.includes(person.id)}
+              onClick={() =>
+                setFollowing((old) =>
+                  old.includes(person.id)
+                    ? old.filter((id) => id !== person.id)
+                    : [...old, person.id],
+                )
+              }
+            >
+              {following.includes(person.id) ? "フォロー中 ✓" : "＋ フォロー"}
+            </button>
+          </article>
+        </Reveal>
+      ))}
+    </>
+  );
+}
+
+function AuthForm({ signup }: { signup: boolean }) {
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+    const data = new FormData(event.currentTarget);
+    try {
+      setMessage(
+        await submitAuth(signup ? "signup" : "login", {
+          email: String(data.get("email")),
+          password: String(data.get("password")),
+          username: String(data.get("username") ?? ""),
+        }),
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "接続できませんでした。",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="auth-card">
+      <span className="auth-flower">✿</span>
+      <span className="eyebrow">WELCOME TO MELOOP</span>
+      <h2>{signup ? "あなたの「好き」を、ここに。" : "おかえりなさい。"}</h2>
+      <p>音楽の話をしよう。今日も、あなたのペースで。</p>
+      <form onSubmit={submit}>
+        {signup && (
+          <label>
+            ユーザー名
+            <input
+              name="username"
+              required
+              maxLength={30}
+              autoComplete="username"
+              placeholder="音楽好きのあなたの名前"
+            />
+          </label>
+        )}
+        <label>
+          メールアドレス
+          <input
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@example.com"
+          />
+        </label>
+        <label>
+          パスワード
+          <input
+            name="password"
+            type="password"
+            minLength={8}
+            required
+            autoComplete={signup ? "new-password" : "current-password"}
+            placeholder="8文字以上"
+          />
+        </label>
+        <button className="button primary" disabled={busy}>
+          {busy ? "確認中…" : signup ? "新規登録する →" : "ログインする →"}
+        </button>
+      </form>
+      <p className="form-message" role="status">
+        {message || "学習用UI：認証処理は皆さんの実装ポイントです。"}
+      </p>
+      <Link href={signup ? "/login" : "/signup"}>
+        {signup
+          ? "アカウントをお持ちの方はログイン"
+          : "はじめての方はこちらから新規登録"}{" "}
+        ↗
+      </Link>
+    </section>
+  );
+}
+
+function Composer() {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      await publishPost(text);
+      setMessage("投稿しました。");
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "投稿できませんでした。",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="composer">
+      <div className="composer-top">
+        <span className="avatar mint">🎧</span>
+        <button onClick={() => setOpen(!open)} aria-expanded={open}>
+          いま、どんな音楽を聴いてる？<span>＋</span>
+        </button>
+      </div>
+      {open && (
+        <form onSubmit={submit}>
+          <label htmlFor="post-text" className="sr-only">
+            投稿するひとこと
+          </label>
+          <textarea
+            id="post-text"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            required
+            maxLength={280}
+            placeholder="この曲を好きな理由を、ひとこと。"
+          />
+          <div className="composer-bottom">
+            <Link href="/search">♫ 曲をさがす</Link>
+            <button className="button primary" disabled={busy}>
+              {busy ? "確認中…" : "シェアする ↗"}
+            </button>
+          </div>
+          <p className="form-message" role="status">
+            {message || "曲の選択・投稿の保存はこれから接続する部分です。"}
+          </p>
+        </form>
+      )}
+    </section>
+  );
+}
+
+export default function MusicApp({ screen }: { screen: Screen }) {
+  const [tab, setTab] = useState("all");
+  const auth = screen === "login" || screen === "signup";
+  return (
+    <div className="app-shell">
+      <a href="#main" className="skip-link">
+        本文へスキップ
+      </a>
+      <div className="music-doodles" aria-hidden="true">
+        <span>♫</span>
+        <span>♩</span>
+        <span>♬</span>
+        <span>♮</span>
+        <span>🎸</span>
+        <span>♪</span>
+      </div>
+      <header className="topbar">
+        <Link href="/" className="wordmark">
+          <span className="logo-flower">✿</span>meloop
+          <span className="logo-dot">.</span>
+        </Link>
+        <span className="brand-caption">好きな音で、つながろう。</span>
+        <div className="topbar-actions">
+          <span className="demo-chip">DEMO / 学習用</span>
+          <Link href="/login">ログイン</Link>
+          <Link href="/signup" className="button primary small">
+            はじめる ↗
+          </Link>
+        </div>
+      </header>
+      <div className="workspace">
+        <aside className="sidebar">
+          <span className="eyebrow sidebar-label">MY LITTLE MUSIC SPACE</span>
+          <nav aria-label="メインメニュー">
+            {navigation.map((item) => (
+              <Link
+                key={item.screen}
+                href={item.href}
+                className={
+                  screen === item.screen ? "nav-item active" : "nav-item"
+                }
+                aria-current={screen === item.screen ? "page" : undefined}
+              >
+                <span>{item.icon}</span>
+                {item.text}
+                {screen === item.screen && <i />}
+              </Link>
+            ))}
+          </nav>
+          <div className="sidebar-note">
+            <span>♬</span>
+            <p>
+              その一曲が、
+              <br />
+              だれかの好きになる。
+            </p>
+            <small>SHARE YOUR LITTLE FAVORITE</small>
+          </div>
+          <div className="sidebar-user">
+            <span className="avatar mint">🎧</span>
+            <div>
+              <b>音楽好きのあなた</b>
+              <small>ゲスト / サンプル表示</small>
+            </div>
+          </div>
+        </aside>
+        <main
+          id="main"
+          className={auth ? "main-column auth-main" : "main-column"}
+        >
+          {auth ? (
+            <AuthForm signup={screen === "signup"} />
+          ) : (
+            <>
+              <section className="hero">
+                <div className="hero-copy">
+                  <span className="eyebrow">
+                    A LITTLE MUSIC, A LITTLE CONNECTION.
+                  </span>
+                  <h1>
+                    今日の気持ちに、
+                    <br />
+                    <span>一曲を。</span>
+                    <i>♫</i>
+                  </h1>
+                  <p>
+                    好きな音楽を分けあったら、
+                    <br />
+                    いつもの毎日が、ちょっと弾みだす。
+                  </p>
+                  <Link href="/search" className="hero-link">
+                    お気に入りを見つける <span>↗</span>
+                  </Link>
+                </div>
+                <div className="hero-art" aria-hidden="true">
+                  <span className="orbit-note n1">♪</span>
+                  <span className="orbit-note n2">✧</span>
+                  <div className="hero-record">
+                    <div>
+                      <small>GOOD MUSIC</small>
+                      <b>✿</b>
+                      <small>GOOD DAYS</small>
+                    </div>
+                  </div>
+                  <span className="hero-sticker">just press play ♡</span>
+                  <span className="orbit-note n3">♫</span>
+                </div>
+              </section>
+              {screen === "home" && (
+                <>
+                  <div className="section-heading">
+                    <div>
+                      <span className="eyebrow">ON YOUR TIMELINE</span>
+                      <h2>
+                        みんなの、いまの一曲 <span>✳</span>
+                      </h2>
+                    </div>
+                    <span className="handwritten">
+                      いい音、あつまってます。
+                    </span>
+                  </div>
+                  <div
+                    className="feed-tabs"
+                    role="group"
+                    aria-label="タイムラインの表示"
+                  >
+                    <button
+                      className={tab === "all" ? "selected" : ""}
+                      aria-pressed={tab === "all"}
+                      onClick={() => setTab("all")}
+                    >
+                      みんなの投稿
+                    </button>
+                    <button
+                      className={tab === "following" ? "selected" : ""}
+                      aria-pressed={tab === "following"}
+                      onClick={() => setTab("following")}
+                    >
+                      フォロー中
+                    </button>
+                    <span>サンプル投稿</span>
+                  </div>
+                  <Composer />
+                  {(tab === "all"
+                    ? posts
+                    : posts.filter((post) => post.person.id === "hina")
+                  ).map((post) => (
+                    <Post key={post.id} post={post} />
+                  ))}
+                  {tab === "following" && (
+                    <p className="small-print">
+                      サンプルでは「ひな」をフォロー中として表示しています。フォロー関係の同期はTODO(B)です。
+                    </p>
+                  )}
+                </>
+              )}
+              {screen === "search" && <Search />}
+              {screen === "following" && <Following />}
+              {screen === "profile" && (
+                <>
+                  <section className="profile-card">
+                    <div className="profile-cover">♪ ♫ ✧</div>
+                    <span className="avatar profile-avatar mint">🎧</span>
+                    <span className="profile-label">SAMPLE PROFILE</span>
+                    <h2>音楽好きのあなた</h2>
+                    <p className="muted">@your_music</p>
+                    <p>
+                      音楽のある日々を、ここから。
+                      <br />
+                      好きな曲や自己紹介を追加して、あなたらしいページに。
+                    </p>
+                    <div className="profile-stats">
+                      <span>
+                        <b>0</b> 投稿
+                      </span>
+                      <span>
+                        <b>0</b> フォロー
+                      </span>
+                      <span>
+                        <b>0</b> フォロワー
+                      </span>
+                    </div>
+                    <Link href="/signup" className="button primary">
+                      アカウントを作る ↗
+                    </Link>
+                  </section>
+                  <div className="empty-state">
+                    <span>♫</span>
+                    <h3>最初の一曲、何にする？</h3>
+                    <p>
+                      あなたのプロフィールと投稿は、認証・保存機能を接続するとここに並びます。
+                    </p>
+                    <Link href="/search">お気に入りの曲をさがす →</Link>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+          <footer className="page-footer">
+            <span>✿ meloop</span>
+            <p>音楽を好きな気持ちで、つながっていこう。</p>
+            <small>
+              学習用プロトタイプ · 投稿・リアクション・フォローは保存されません
+            </small>
+          </footer>
+        </main>
+        <aside className="right-column">
+          <section className="daily-note">
+            <span className="eyebrow">TODAY’S MOOD</span>
+            <span className="daily-flower">✿</span>
+            <h3>きょうは、どんな気分？</h3>
+            <p>
+              気分にぴったりの音楽を
+              <br />
+              探しにいこう。
+            </p>
+            <Link href="/search">音楽をさがす ↗</Link>
+            <span className="note-stamp">have a lovely day</span>
+          </section>
+          <section className="community-card">
+            <div className="aside-title">
+              <h3>音楽好きの仲間たち</h3>
+              <span>♧</span>
+            </div>
+            {people.map((person) => (
+              <div className="mini-person" key={person.id}>
+                <span className={`avatar ${person.color}`}>{person.icon}</span>
+                <div>
+                  <b>{person.name}</b>
+                  <small>@{person.handle}</small>
+                </div>
+              </div>
+            ))}
+            <Link href="/following">みんなを見てみる →</Link>
+          </section>
+          <section className="little-memo">
+            <span>✧ 小さな使い方メモ</span>
+            <p>
+              気になった曲には、
+              <br />
+              絵文字で気持ちを伝えてみよう。
+              <br />
+              言葉にしなくても、きっと届く。
+            </p>
+            <div>🤍　🎧　✨</div>
+          </section>
+          <p className="aside-foot">
+            MADE FOR MUSIC LOVERS.
+            <br />© Meloop · student project
+          </p>
+        </aside>
+      </div>
+    </div>
+  );
+}
