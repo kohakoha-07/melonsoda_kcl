@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useRef,
@@ -381,21 +382,32 @@ function Following() {
 }
 
 function AuthForm({ signup }: { signup: boolean }) {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
+
     const data = new FormData(event.currentTarget);
+
     try {
-      setMessage(
-        await submitAuth(signup ? "signup" : "login", {
-          email: String(data.get("email")),
-          password: String(data.get("password")),
-          username: String(data.get("username") ?? ""),
-        }),
-      );
+      const result = await submitAuth(signup ? "signup" : "login", {
+        email: String(data.get("email")),
+        password: String(data.get("password")),
+        username: String(data.get("username") ?? ""),
+      });
+
+      setMessage(result);
+
+      // ログインに成功したときだけホームへ移動する。
+      // 新規登録ではメール確認の案内をそのまま表示する。
+      if (!signup) {
+        router.replace("/");
+        router.refresh();
+      }
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "接続できませんでした。",
@@ -404,6 +416,7 @@ function AuthForm({ signup }: { signup: boolean }) {
       setBusy(false);
     }
   }
+
   return (
     <section className="auth-card">
       <span className="auth-flower">✿</span>
