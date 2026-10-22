@@ -43,3 +43,89 @@ export async function submitAuth(
   void text;
   throw new Error("投稿の保存はまだ未接続です。");
 }
+export async function addReaction(
+  postId: string,
+  emoji: string,
+): Promise<void> {
+  const supabase = createClient();
+
+  // アプリにログインしているユーザーを確認
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+  if (!user) {
+    throw new Error("リアクションするにはログインしてください。");
+  }
+
+  // 同じリアクションがあれば重複登録しない
+  const { error } = await supabase.from("likes").upsert(
+    {
+      post_id: postId,
+      user_id: user.id,
+      emoji,
+    },
+    {
+      onConflict: "user_id,post_id,emoji",
+      ignoreDuplicates: true,
+    },
+  );
+
+  if (error) throw error;
+}
+export async function removeReaction(
+  postId: string,
+  emoji: string,
+): Promise<void> {
+  const supabase = createClient();
+
+  // ログインユーザーを確認
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+  if (!user) {
+    throw new Error("リアクションを解除するにはログインしてください。");
+  }
+
+  // 自分が、この投稿に付けた、この絵文字だけを削除
+  const { error } = await supabase
+    .from("likes")
+    .delete()
+    .eq("post_id", postId)
+    .eq("user_id", user.id)
+    .eq("emoji", emoji);
+
+  if (error) throw error;
+}
+export async function getMyReactions(
+  postId: string,
+): Promise<string[]> {
+  const supabase = createClient();
+
+  // ログインユーザーを確認
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+
+  // 未ログインなら、選択済みの絵文字はなし
+  if (!user) return [];
+
+  // この投稿に自分が付けた絵文字を取得
+  const { data, error } = await supabase
+    .from("likes")
+    .select("emoji")
+    .eq("post_id", postId)
+    .eq("user_id", user.id);
+
+  if (error) throw error;
+
+  return data.map((reaction) => reaction.emoji);
+}
