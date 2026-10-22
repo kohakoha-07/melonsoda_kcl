@@ -10,7 +10,13 @@ import {
   type ReactNode,
 } from "react";
 import { people, posts, type Track } from "@/lib/workshop/data";
-import { publishPost, submitAuth } from "@/lib/workshop/actions";
+import {
+  publishPost,
+  submitAuth,
+  addReaction,
+  removeReaction,
+  getMyReactions,
+} from "@/lib/workshop/actions";
 
 type Screen = "home" | "search" | "following" | "profile" | "login" | "signup";
 const navigation: {
@@ -158,9 +164,80 @@ function Player({ track, color = "pink" }: { track: Track; color?: string }) {
   );
 }
 
-function Reactions() {
+function Reactions({ postId }: { postId: string }) {
   // TODO(B): post_id と認証ユーザーを使ってSupabaseへ保存・取得。
   const [selected, setSelected] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+  if (!/^[0-9]+$/.test(postId)) return;
+
+  let cancelled = false;
+
+  async function loadReactions() {
+    setSaving(true);
+
+    try {
+      const emojis = await getMyReactions(postId);
+
+      if (!cancelled) {
+        setSelected(emojis);
+        setError("");
+      }
+    } catch {
+      if (!cancelled) {
+        setError("保存済みのリアクションを取得できませんでした。");
+      }
+    } finally {
+      if (!cancelled) setSaving(false);
+    }
+  }
+
+  void loadReactions();
+
+  return () => {
+    cancelled = true;
+  };
+}, [postId]);
+  async function toggleReaction(emoji: string) {
+  if (saving) return;
+
+  // サンプルIDでは保存しない
+  if (!/^[0-9]+$/.test(postId)) {
+    setError("この投稿はサンプルです。保存にはDBの投稿IDが必要です。");
+    return;
+  }
+
+  setSaving(true);
+  setError("");
+
+  try {
+    if (selected.includes(emoji)) {
+      await removeReaction(postId, emoji);
+
+      setSelected((old) =>
+        old.filter((value) => value !== emoji),
+      );
+    } else {
+      await addReaction(postId, emoji);
+
+      setSelected((old) => [...old, emoji]);
+    }
+  
+  } catch (error) {
+  const message =
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error
+      ? String(error.message)
+      : "リアクションを保存できませんでした。";
+
+  setError(message);
+} finally {
+  setSaving(false);
+}
+ 
+}
   return (
     <div className="reactions" aria-label="絵文字でリアクション（デモ）">
       {["🤍", "🥰", "🎧", "✨", "🔥"].map((emoji, index) => (
@@ -168,21 +245,19 @@ function Reactions() {
           key={emoji}
           aria-label={`${emoji}でリアクション`}
           aria-pressed={selected.includes(emoji)}
-          onClick={() =>
-            setSelected((old) =>
-              old.includes(emoji)
-                ? old.filter((value) => value !== emoji)
-                : [...old, emoji],
-            )
-          }
+          disabled={saving}
+          onClick={() => toggleReaction(emoji)}
         >
           {emoji}
           <span>
             {[12, 5, 8, 3, 2][index] + (selected.includes(emoji) ? 1 : 0)}
           </span>
+          {error && <p role="alert">{error}</p>}
         </button>
       ))}
-      <span className="reaction-hint">気持ちをのせよう</span>
+      <span className="reaction-hint">
+      気持ちをのせよう（投稿ID: {postId}）
+      </span>
     </div>
   );
 }
@@ -204,7 +279,7 @@ function Post({ post }: { post: (typeof posts)[number] }) {
         <p className="post-text">{post.text}</p>
         <Player track={post.track} color={post.color} />
         <div className="post-tag">{post.tag}</div>
-        <Reactions />
+        <Reactions postId={post.id === "p1" ? "1" : post.id} />
       </article>
     </Reveal>
   );
@@ -365,12 +440,12 @@ function Following() {
               className={`button ${following.includes(person.id) ? "soft" : "primary"}`}
               aria-pressed={following.includes(person.id)}
               onClick={() =>
-                setFollowing((old) =>
-                  old.includes(person.id)
-                    ? old.filter((id) => id !== person.id)
-                    : [...old, person.id],
-                )
-              }
+               setFollowing((old) =>
+               old.includes(person.id)
+               ? old.filter((id) => id !== person.id)
+              : [...old, person.id],
+  )
+}
             >
               {following.includes(person.id) ? "フォロー中 ✓" : "＋ フォロー"}
             </button>
