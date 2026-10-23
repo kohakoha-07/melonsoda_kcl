@@ -1,4 +1,5 @@
-// 皆さんの穴埋めポイント。docs/TEAM_WORKBOOK.md と一緒に進めてください。
+import { createClient } from "../supabase/server";
+
 export async function submitAuth(
   mode: "login" | "signup",
   fields: {
@@ -15,10 +16,24 @@ export async function submitAuth(
   );
 }
 
-export async function publishPost(text: string): Promise<void> {
-  // TODO(B): 認証を確認し、選択したSpotify曲と本文をpostsへ保存する。
-  void text;
-  throw new Error(
-    "投稿の保存は未接続です。lib/workshop/actions.ts の TODO(B) を実装してください。",
-  );
+export async function publishPost(
+  text: string,
+  spotifyTrackId: string,
+): Promise<void> {
+  const body = text.trim();
+  if (!body) throw new Error("本文を入力してください。");
+  if (!spotifyTrackId) throw new Error("曲を選んでください。");
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("ログインが必要です。");
+
+  const { error } = await supabase.from("posts").insert({
+    author_id: user.id,
+    spotify_track_id: spotifyTrackId,
+    body,
+  });
+  if (error) throw new Error(error.message);
 }
