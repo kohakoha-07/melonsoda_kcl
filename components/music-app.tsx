@@ -1,5 +1,6 @@
 "use client";
 
+import AuthStatus from "@/components/auth-status";
 import ProfileSummary from "@/components/profile-summary";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -538,7 +539,7 @@ function AuthForm({ signup }: { signup: boolean }) {
         </button>
       </form>
       <p className="form-message" role="status">
-        {message || "学習用UI：認証処理は皆さんの実装ポイントです。"}
+        {message}
       </p>
       <Link href={signup ? "/login" : "/signup"}>
         {signup
@@ -628,16 +629,14 @@ export default function MusicApp({ screen }: { screen: Screen }) {
         </Link>
         <span className="brand-caption">好きな音で、つながろう。</span>
         <div className="topbar-actions">
-          <span className="demo-chip">DEMO / 学習用</span>
-          <Link href="/login">ログイン</Link>
-          <Link href="/signup" className="button primary small">
-            はじめる ↗
-          </Link>
+          <AuthStatus />
         </div>
       </header>
       <div className="workspace">
         <aside className="sidebar">
-          <span className="eyebrow sidebar-label">MY LITTLE MUSIC SPACE</span>
+          <span className="eyebrow sidebar-label">
+            MY LITTLE MUSIC SPACE
+          </span>
           <nav aria-label="メインメニュー">
             {navigation.map((item) => (
               <Link
@@ -672,10 +671,10 @@ export default function MusicApp({ screen }: { screen: Screen }) {
           </div>
         </aside>
         <main
-          id="main"
-          className={auth ? "main-column auth-main" : "main-column"}
-        >
-          {auth ? (
+  id="main"
+  className={auth ? "main-column auth-main" : "main-column"}
+>
+  {auth ? (
             <AuthForm signup={screen === "signup"} />
           ) : (
             <>

@@ -55,7 +55,6 @@ export default function AuthStatus() {
     <div>
       {name && (
         <>
-          <b>{name}</b>
           <button
             className="button soft"
             onClick={logout}
