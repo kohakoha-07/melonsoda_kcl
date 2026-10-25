@@ -230,3 +230,25 @@ export async function getFollowCandidates() {
 
   return data;
 }
+export async function getReactionCounts(
+  postId: string,
+): Promise<Record<string, number>> {
+  const supabase = createClient();
+  const emojis = ["🤍", "🥰", "🎧", "✨", "🔥"];
+
+  const results = await Promise.all(
+    emojis.map(async (emoji) => {
+      const { count, error } = await supabase
+        .from("likes")
+        .select("*", { count: "exact", head: true })
+        .eq("post_id", postId)
+        .eq("emoji", emoji);
+
+      if (error) throw error;
+
+      return [emoji, count ?? 0] as const;
+    }),
+  );
+
+  return Object.fromEntries(results);
+}
