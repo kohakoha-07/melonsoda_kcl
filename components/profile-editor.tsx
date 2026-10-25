@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { loadMyProfile, saveMyProfile } from "@/lib/profiles";
 
@@ -91,6 +92,9 @@ export default function ProfileEditor() {
       </form>
 
       <p role="status">{message}</p>
+      <Link href="/profile" className="button soft">
+  ← プロフィールに戻る
+</Link>
     </section>
   );
 }
