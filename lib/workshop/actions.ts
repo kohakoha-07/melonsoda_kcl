@@ -129,3 +129,104 @@ export async function getMyReactions(
 
   return data.map((reaction) => reaction.emoji);
 }
+export async function followUser(
+  followingId: string,
+): Promise<void> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+
+  if (!user) {
+    throw new Error("フォローするにはログインしてください。");
+  }
+
+  if (user.id === followingId) {
+    throw new Error("自分自身はフォローできません。");
+  }
+
+  const { error } = await supabase.from("follows").upsert(
+    {
+      follower_id: user.id,
+      following_id: followingId,
+    },
+    {
+      onConflict: "follower_id,following_id",
+      ignoreDuplicates: true,
+    },
+  );
+
+  if (error) throw error;
+}
+export async function unfollowUser(
+  followingId: string,
+): Promise<void> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+
+  if (!user) {
+    throw new Error("フォローを解除するにはログインしてください。");
+  }
+
+  const { error } = await supabase
+    .from("follows")
+    .delete()
+    .eq("follower_id", user.id)
+    .eq("following_id", followingId);
+
+  if (error) throw error;
+}
+export async function getMyFollowing(): Promise<string[]> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("follows")
+    .select("following_id")
+    .eq("follower_id", user.id);
+
+  if (error) throw error;
+
+  return data.map((follow) => follow.following_id);
+}
+export async function getFollowCandidates() {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+
+  if (!user) {
+    throw new Error("ログインしてください。");
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("user_id, username, bio")
+    .neq("user_id", user.id)
+    .order("username");
+
+  if (error) throw error;
+
+  return data;
+}
