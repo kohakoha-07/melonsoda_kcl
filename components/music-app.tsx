@@ -18,6 +18,7 @@ import {
   addReaction,
   removeReaction,
   getMyReactions,
+  getReactionCounts,
   followUser,
   unfollowUser,
   getMyFollowing,
@@ -173,6 +174,7 @@ function Player({ track, color = "pink" }: { track: Track; color?: string }) {
 function Reactions({ postId }: { postId: string }) {
   // TODO(B): post_id と認証ユーザーを使ってSupabaseへ保存・取得。
   const [selected, setSelected] = useState<string[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -184,12 +186,16 @@ function Reactions({ postId }: { postId: string }) {
     setSaving(true);
 
     try {
-      const emojis = await getMyReactions(postId);
+      const [emojis, reactionCounts] = await Promise.all([
+  getMyReactions(postId),
+  getReactionCounts(postId),
+]);
 
-      if (!cancelled) {
-        setSelected(emojis);
-        setError("");
-      }
+if (!cancelled) {
+  setSelected(emojis);
+  setCounts(reactionCounts);
+  setError("");
+}
     } catch {
       if (!cancelled) {
         setError("保存済みのリアクションを取得できませんでした。");
@@ -229,8 +235,12 @@ function Reactions({ postId }: { postId: string }) {
 
       setSelected((old) => [...old, emoji]);
     }
+   // 保存・解除後の件数を取得
+    const reactionCounts = await getReactionCounts(postId);
+    setCounts(reactionCounts);
+  }
   
-  } catch (error) {
+  catch (error) {
   const message =
     typeof error === "object" &&
     error !== null &&
@@ -246,7 +256,7 @@ function Reactions({ postId }: { postId: string }) {
 }
   return (
     <div className="reactions" aria-label="絵文字でリアクション（デモ）">
-      {["🤍", "🥰", "🎧", "✨", "🔥"].map((emoji, index) => (
+      {["🤍", "🥰", "🎧", "✨", "🔥"].map((emoji) => (
         <button
           key={emoji}
           aria-label={`${emoji}でリアクション`}
@@ -255,9 +265,7 @@ function Reactions({ postId }: { postId: string }) {
           onClick={() => toggleReaction(emoji)}
         >
           {emoji}
-          <span>
-            {[12, 5, 8, 3, 2][index] + (selected.includes(emoji) ? 1 : 0)}
-          </span>
+          <span>{counts[emoji] ?? 0}</span>
           {error && <p role="alert">{error}</p>}
         </button>
       ))}
