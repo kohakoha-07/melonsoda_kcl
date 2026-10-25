@@ -16,6 +16,10 @@ import {
   addReaction,
   removeReaction,
   getMyReactions,
+  followUser,
+  unfollowUser,
+  getMyFollowing,
+  getFollowCandidates,
 } from "@/lib/workshop/actions";
 
 type Screen = "home" | "search" | "following" | "profile" | "login" | "signup";
@@ -410,8 +414,89 @@ function Search() {
 }
 
 function Following() {
-  // TODO(B): follow関係を保存・取得。この状態は更新するとリセットされます。
-  const [following, setFollowing] = useState<string[]>(["hina"]);
+  const [users, setUsers] = useState<
+    {
+      user_id: string;
+      username: string | null;
+      bio: string | null;
+    }[]
+  >([]);
+  const [following, setFollowing] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  // ユーザー一覧と、自分のフォロー情報を取得
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const [candidates, followingIds] = await Promise.all([
+          getFollowCandidates(),
+          getMyFollowing(),
+        ]);
+
+        if (!cancelled) {
+          setUsers(candidates);
+          setFollowing(followingIds);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setError(getMessage(error));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function getMessage(error: unknown): string {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error
+    ) {
+      return String(error.message);
+    }
+
+    return "フォロー情報の処理に失敗しました。";
+  }
+
+  // 保存に成功したら画面を更新
+  async function toggleFollow(userId: string) {
+    if (saving) return;
+
+    setSaving(true);
+    setError("");
+
+    try {
+      if (following.includes(userId)) {
+        await unfollowUser(userId);
+
+        setFollowing((old) =>
+          old.filter((id) => id !== userId),
+        );
+      } else {
+        await followUser(userId);
+
+        setFollowing((old) => [...old, userId]);
+      }
+    } catch (error) {
+      setError(getMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <>
       <div className="section-heading">
@@ -422,36 +507,50 @@ function Following() {
           </h2>
         </div>
       </div>
-      <p className="status">
-        フォロー中 {following.length} 人 · サンプルユーザー
-      </p>
-      {people.map((person) => (
-        <Reveal key={person.id}>
-          <article className="person-card">
-            <span className={`avatar large ${person.color}`}>
-              {person.icon}
-            </span>
-            <div>
-              <h3>{person.name}</h3>
-              <span className="muted">@{person.handle}</span>
-              <p>{person.bio}</p>
-            </div>
-            <button
-              className={`button ${following.includes(person.id) ? "soft" : "primary"}`}
-              aria-pressed={following.includes(person.id)}
-              onClick={() =>
-               setFollowing((old) =>
-               old.includes(person.id)
-               ? old.filter((id) => id !== person.id)
-              : [...old, person.id],
-  )
-}
-            >
-              {following.includes(person.id) ? "フォロー中 ✓" : "＋ フォロー"}
-            </button>
-          </article>
-        </Reveal>
-      ))}
+
+      {error && <p role="alert">{error}</p>}
+
+      {loading ? (
+        <p className="status">読み込み中です…</p>
+      ) : (
+        <>
+          <p className="status">
+            フォロー中 {following.length} 人
+          </p>
+
+          {!error && users.length === 0 && (
+            <p>表示できるほかのユーザーはまだいません。</p>
+          )}
+
+          {users.map((person) => (
+            <Reveal key={person.user_id}>
+              <article className="person-card">
+                <span className="avatar large pink">♫</span>
+
+                <div>
+                  <h3>{person.username || "名前未設定"}</h3>
+                  <p>{person.bio || "自己紹介はまだありません。"}</p>
+                </div>
+
+                <button
+                  className={`button ${
+                    following.includes(person.user_id)
+                      ? "soft"
+                      : "primary"
+                  }`}
+                  aria-pressed={following.includes(person.user_id)}
+                  disabled={saving}
+                  onClick={() => toggleFollow(person.user_id)}
+                >
+                  {following.includes(person.user_id)
+                    ? "フォロー中 ✓"
+                    : "＋ フォロー"}
+                </button>
+              </article>
+            </Reveal>
+          ))}
+        </>
+      )}
     </>
   );
 }
