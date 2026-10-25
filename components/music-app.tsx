@@ -1,5 +1,6 @@
 "use client";
 
+import ProfileSummary from "@/components/profile-summary";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -764,32 +765,7 @@ export default function MusicApp({ screen }: { screen: Screen }) {
               {screen === "following" && <Following />}
               {screen === "profile" && (
                 <>
-                  <section className="profile-card">
-                    <div className="profile-cover">♪ ♫ ✧</div>
-                    <span className="avatar profile-avatar mint">🎧</span>
-                    <span className="profile-label">SAMPLE PROFILE</span>
-                    <h2>音楽好きのあなた</h2>
-                    <p className="muted">@your_music</p>
-                    <p>
-                      音楽のある日々を、ここから。
-                      <br />
-                      好きな曲や自己紹介を追加して、あなたらしいページに。
-                    </p>
-                    <div className="profile-stats">
-                      <span>
-                        <b>0</b> 投稿
-                      </span>
-                      <span>
-                        <b>0</b> フォロー
-                      </span>
-                      <span>
-                        <b>0</b> フォロワー
-                      </span>
-                    </div>
-                    <Link href="/signup" className="button primary">
-                      アカウントを作る ↗
-                    </Link>
-                  </section>
+<ProfileSummary />
                   <div className="empty-state">
                     <span>♫</span>
                     <h3>最初の一曲、何にする？</h3>
