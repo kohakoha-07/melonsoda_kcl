@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loadMyProfile } from "@/lib/profiles";
+import { createClient } from "@/lib/supabase/client";
 
 type Profile = {
   username: string | null;
@@ -11,6 +12,7 @@ type Profile = {
 
 export default function ProfileSummary() {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -19,8 +21,20 @@ export default function ProfileSummary() {
 
     async function load() {
       try {
+        const supabase = createClient();
+        const { data: auth, error: authError } =
+          await supabase.auth.getUser();
+
+        if (authError || !auth.user) {
+          throw new Error("ログインしてください。");
+        }
+
         const data = await loadMyProfile();
-        if (active) setProfile(data);
+
+        if (active) {
+          setUserId(auth.user.id);
+          setProfile(data);
+        }
       } catch (error) {
         if (active) {
           setError(
@@ -66,9 +80,28 @@ export default function ProfileSummary() {
         {profile?.bio || "自己紹介はまだありません。"}
       </p>
 
-      <Link href="/profile/edit" className="button primary">
-        プロフィール編集
-      </Link>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <Link href="/profile/edit" className="button primary">
+          プロフィール編集
+        </Link>
+
+        {profile && userId && (
+          <Link href={`/profile/${userId}`} className="button soft">
+            ♫ プロフィールを共有
+          </Link>
+        )}
+      </div>
+
+      {!profile && (
+        <p>共有するには、先にプロフィールを保存してください。</p>
+      )}
     </section>
   );
 }
