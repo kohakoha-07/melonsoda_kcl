@@ -731,8 +731,23 @@ export default function MusicApp({ screen }: { screen: Screen }) {
       </div>
       <header className="topbar">
         <Link href="/" className="wordmark">
-          <span className="logo-flower">✿</span>meloop
-          <span className="logo-dot">.</span>
+<span className="logo-pick" aria-hidden="true">
+  <svg viewBox="0 0 48 54" width="36" height="40">
+    <path
+      d="M24 3C13 3 4 7 4 17c0 13 12 29 20 34 8-5 20-21 20-34C44 7 35 3 24 3Z"
+      fill="currentColor"
+    />
+    <path
+      d="M28 15v18m0-18 8-2v7l-8 2"
+      fill="none"
+      stroke="#faf9f5"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <ellipse cx="23" cy="34" rx="6" ry="4" fill="#faf9f5" />
+  </svg>
+</span>          <span className="logo-dot">.</span>
         </Link>
         <span className="brand-caption">好きな音で、つながろう。</span>
         <div className="topbar-actions">
@@ -786,6 +801,13 @@ export default function MusicApp({ screen }: { screen: Screen }) {
           ) : (
             <>
               <section className="hero">
+                <div className="stage-instruments" aria-hidden="true">
+  <span className="instrument guitar">🎸</span>
+  <span className="instrument bass">🎸</span>
+  <span className="instrument drums">🥁</span>
+  <span className="instrument keyboard">🎹</span>
+  <span className="instrument microphone">🎤</span>
+</div>
                 <div className="hero-copy">
                   <span className="eyebrow">
                     A LITTLE MUSIC, A LITTLE CONNECTION.
@@ -821,6 +843,23 @@ export default function MusicApp({ screen }: { screen: Screen }) {
               </section>
               {screen === "home" && (
                 <>
+                <div className="feed-instruments" aria-hidden="true">
+    <span>🎸</span>
+  <span>🥁</span>
+  <span>🎹</span>
+  <span>🎤</span>
+  <span>🎸</span>
+  <span>🎵</span>
+  <span>🎹</span>
+  <span>🎸</span>
+  <span>🎤</span>
+  <span>🥁</span>
+  <span>🎶</span>
+  <span>🎸</span>
+  <span>🎹</span>
+  <span>🎤</span>
+  <span>🎵</span>
+</div>
                   <div className="section-heading">
                     <div>
                       <span className="eyebrow">ON YOUR TIMELINE</span>
@@ -885,12 +924,32 @@ export default function MusicApp({ screen }: { screen: Screen }) {
             </>
           )}
           <footer className="page-footer">
-            <span>✿ meloop</span>
-            <p>音楽を好きな気持ちで、つながっていこう。</p>
-            <small>
-              学習用プロトタイプ · 投稿・リアクション・フォローは保存されません
-            </small>
-          </footer>
+ <span>
+  <svg
+    viewBox="0 0 48 54"
+    width="24"
+    height="28"
+    aria-hidden="true"
+  >
+    <path
+      d="M24 3C13 3 4 7 4 17c0 13 12 29 20 34 8-5 20-21 20-34C44 7 35 3 24 3Z"
+      fill="currentColor"
+    />
+    <path
+      d="M28 15v18m0-18 8-2v7l-8 2"
+      fill="none"
+      stroke="#faf9f5"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <ellipse cx="23" cy="34" rx="6" ry="4" fill="#faf9f5" />
+  </svg>
+  meloop
+</span>
+           <p>音楽を好きな気持ちで、つながっていこう。</p>
+          <small>© Meloop · student project</small>
+        </footer>
         </main>
         <aside className="right-column">
           <section className="daily-note">

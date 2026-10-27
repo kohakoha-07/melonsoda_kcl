@@ -1543,3 +1543,251 @@ button {
     transform: none;
   }
 }
+.logo-pick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 10px;
+  color: #436957;
+  transform: rotate(-12deg);
+}
+
+@media (max-width: 760px) {
+  .logo-pick svg {
+    width: 29px;
+    height: 34px;
+  }
+}
+/* バナーの背景に楽器を配置 */
+.hero {
+  isolation: isolate;
+}
+
+.stage-instruments {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.instrument {
+  position: absolute;
+  opacity: 0.2;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  line-height: 1;
+  filter: saturate(0.65);
+}
+
+.instrument.guitar {
+  top: 12%;
+  left: 43%;
+  font-size: 65px;
+  transform: rotate(-25deg);
+}
+
+.instrument.bass {
+  right: 3%;
+  bottom: 7%;
+  font-size: 72px;
+  transform: rotate(24deg) scaleX(0.75) scaleY(1.1);
+}
+
+.instrument.drums {
+  left: 42%;
+  bottom: 6%;
+  font-size: 64px;
+  transform: rotate(-12deg);
+}
+
+.instrument.keyboard {
+  right: 3%;
+  top: 5%;
+  font-size: 58px;
+  transform: rotate(20deg);
+}
+
+.instrument.microphone {
+  left: 2%;
+  bottom: 5%;
+  font-size: 48px;
+  transform: rotate(-30deg);
+}
+
+@media (max-width: 760px) {
+  .instrument {
+    opacity: 0.14;
+  }
+
+  .instrument.guitar {
+    left: 48%;
+    font-size: 48px;
+  }
+
+  .instrument.drums {
+    left: 43%;
+    font-size: 44px;
+  }
+
+  .instrument.keyboard {
+    font-size: 42px;
+  }
+
+  .instrument.bass {
+    font-size: 50px;
+  }
+
+  .instrument.microphone {
+    font-size: 36px;
+  }
+}
+.page-footer > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+/* 投稿エリアの背景用 */
+.main-column {
+  position: relative;
+  isolation: isolate;
+}
+
+.feed-instruments {
+  position: absolute;
+  inset: 390px 0 90px;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.feed-instruments span {
+  position: absolute;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  font-size: 65px;
+  line-height: 1;
+  opacity: 0.1;
+  filter: saturate(0.6);
+}
+
+.feed-instruments span:nth-child(1) {
+  top: 2%;
+  left: 0;
+  transform: rotate(-25deg);
+}
+
+.feed-instruments span:nth-child(2) {
+  top: 24%;
+  right: 1%;
+  transform: rotate(15deg);
+}
+
+.feed-instruments span:nth-child(3) {
+  top: 47%;
+  left: 1%;
+  transform: rotate(-15deg);
+}
+
+.feed-instruments span:nth-child(4) {
+  top: 69%;
+  right: 0;
+  transform: rotate(25deg);
+}
+
+.feed-instruments span:nth-child(5) {
+  top: 88%;
+  left: 5%;
+  transform: rotate(20deg) scaleX(0.75);
+}
+
+@media (max-width: 760px) {
+  .feed-instruments {
+    top: 340px;
+  }
+
+  .feed-instruments span {
+    font-size: 45px;
+  }
+}
+.feed-instruments span {
+  opacity: 0.16;
+}
+
+.feed-instruments span:nth-child(1) {
+  top: 0%; left: 1%; right: auto;
+  transform: rotate(-25deg);
+}
+
+.feed-instruments span:nth-child(2) {
+  top: 5%; left: auto; right: 2%;
+  transform: rotate(15deg);
+}
+
+.feed-instruments span:nth-child(3) {
+  top: 16%; left: 42%; right: auto;
+  transform: rotate(-12deg);
+}
+
+.feed-instruments span:nth-child(4) {
+  top: 23%; left: 2%; right: auto;
+  transform: rotate(25deg);
+}
+
+.feed-instruments span:nth-child(5) {
+  top: 30%; left: auto; right: 1%;
+  transform: rotate(20deg) scaleX(0.75);
+}
+
+.feed-instruments span:nth-child(6) {
+  top: 37%; left: 38%;
+  transform: rotate(-15deg);
+}
+
+.feed-instruments span:nth-child(7) {
+  top: 44%; left: 0%;
+  transform: rotate(-20deg);
+}
+
+.feed-instruments span:nth-child(8) {
+  top: 51%; right: 2%;
+  transform: rotate(30deg);
+}
+
+.feed-instruments span:nth-child(9) {
+  top: 58%; left: 45%;
+  transform: rotate(-25deg);
+}
+
+.feed-instruments span:nth-child(10) {
+  top: 65%; left: 2%;
+  transform: rotate(12deg);
+}
+
+.feed-instruments span:nth-child(11) {
+  top: 72%; right: 3%;
+  transform: rotate(-15deg);
+}
+
+.feed-instruments span:nth-child(12) {
+  top: 79%; left: 40%;
+  transform: rotate(20deg) scaleX(0.75);
+}
+
+.feed-instruments span:nth-child(13) {
+  top: 86%; left: 1%;
+  transform: rotate(-15deg);
+}
+
+.feed-instruments span:nth-child(14) {
+  top: 91%; right: 2%;
+  transform: rotate(25deg);
+}
+
+.feed-instruments span:nth-child(15) {
+  top: 96%; left: 44%;
+  transform: rotate(-10deg);
+}
+.post-card {
+  background: rgba(255, 255, 255, 0.50);
+  border-color: rgba(225, 230, 218, 0.80);
+}
