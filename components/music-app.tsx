@@ -1,6 +1,7 @@
 "use client";
 
 import AuthStatus from "@/components/auth-status";
+import Player from "@/components/turntable-player";
 import ProfileSummary from "@/components/profile-summary";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -59,114 +60,6 @@ function Reveal({ children }: { children: ReactNode }) {
   return (
     <div ref={ref} className="reveal">
       {children}
-    </div>
-  );
-}
-
-function Player({ track, color = "pink" }: { track: Track; color?: string }) {
-  const audio = useRef<HTMLAudioElement>(null);
-  const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState("");
-  function stop() {
-    audio.current?.pause();
-    setPlaying(false);
-  }
-  async function toggle() {
-    if (playing) {
-      stop();
-      return;
-    }
-    const element = audio.current;
-    if (!element || !track.previewUrl) return;
-    setError("");
-    try {
-      // 同時に複数の曲が鳴らないよう、ほかのプレイヤーを停止。
-      document.querySelectorAll("audio").forEach((other) => {
-        if (other !== element) other.pause();
-      });
-      element.currentTime = 0;
-      await element.play();
-    } catch {
-      setError("試聴を再生できませんでした。Spotifyで聴いてみてください。");
-      setPlaying(false);
-    }
-  }
-  return (
-    <div className={`player ${color}`}>
-      <div className="record-stage" aria-hidden="true">
-        <span className="deck-brand">MELOOP / 33⅓ RPM</span>
-        <div className={`record ${playing ? "spinning" : ""}`}>
-          <div className="record-label">
-            <span>meloop</span>
-            <b>♪</b>
-            <i />
-          </div>
-        </div>
-        <div className={`tonearm ${playing ? "on" : ""}`} />
-        <span className="deck-light" />
-      </div>
-      <div className="track-info">
-        <span className="eyebrow">TODAY’S ONE SONG</span>
-        <h3>{track.name}</h3>
-        <p>{track.artist}</p>
-        <div className="player-controls">
-          <button
-            className="play-button"
-            onClick={toggle}
-            disabled={!track.previewUrl}
-            aria-label={playing ? "試聴を停止" : `${track.name}を試聴`}
-          >
-            {playing ? "Ⅱ" : "▶"}
-          </button>
-          <div className="play-progress">
-            <span>{track.previewUrl ? "15秒の試聴" : "試聴音源なし"}</span>
-            <div className="progress-line">
-              <i style={{ width: `${progress}%` }} />
-            </div>
-          </div>
-          <span className="tiny-note">♫</span>
-        </div>
-        <a
-          className="spotify-link"
-          href={track.spotifyUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Spotifyで聴く ↗
-        </a>
-        {error && (
-          <p className="inline-error" role="status">
-            {error}
-          </p>
-        )}
-      </div>
-      {track.previewUrl && (
-        <audio
-          ref={audio}
-          src={track.previewUrl}
-          preload="none"
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          onEnded={() => {
-            setPlaying(false);
-            setProgress(0);
-          }}
-          onError={() => {
-            setPlaying(false);
-            setError("音源にアクセスできません。Spotifyで聴いてみてください。");
-          }}
-          onTimeUpdate={() => {
-            const time = audio.current?.currentTime ?? 0;
-            setProgress(Math.min((time / 15) * 100, 100));
-            if (time >= 15) {
-              stop();
-              if (audio.current) audio.current.currentTime = 0;
-              setProgress(0);
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
