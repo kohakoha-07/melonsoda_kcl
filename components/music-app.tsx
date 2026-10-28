@@ -1,6 +1,7 @@
 "use client";
 
 import AuthStatus from "@/components/auth-status";
+import Player from "@/components/spotify-record-player";
 import ProfileSummary from "@/components/profile-summary";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -59,114 +60,6 @@ function Reveal({ children }: { children: ReactNode }) {
   return (
     <div ref={ref} className="reveal">
       {children}
-    </div>
-  );
-}
-
-function Player({ track, color = "pink" }: { track: Track; color?: string }) {
-  const audio = useRef<HTMLAudioElement>(null);
-  const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState("");
-  function stop() {
-    audio.current?.pause();
-    setPlaying(false);
-  }
-  async function toggle() {
-    if (playing) {
-      stop();
-      return;
-    }
-    const element = audio.current;
-    if (!element || !track.previewUrl) return;
-    setError("");
-    try {
-      // 同時に複数の曲が鳴らないよう、ほかのプレイヤーを停止。
-      document.querySelectorAll("audio").forEach((other) => {
-        if (other !== element) other.pause();
-      });
-      element.currentTime = 0;
-      await element.play();
-    } catch {
-      setError("試聴を再生できませんでした。Spotifyで聴いてみてください。");
-      setPlaying(false);
-    }
-  }
-  return (
-    <div className={`player ${color}`}>
-      <div className="record-stage" aria-hidden="true">
-        <span className="deck-brand">MELOOP / 33⅓ RPM</span>
-        <div className={`record ${playing ? "spinning" : ""}`}>
-          <div className="record-label">
-            <span>meloop</span>
-            <b>♪</b>
-            <i />
-          </div>
-        </div>
-        <div className={`tonearm ${playing ? "on" : ""}`} />
-        <span className="deck-light" />
-      </div>
-      <div className="track-info">
-        <span className="eyebrow">TODAY’S ONE SONG</span>
-        <h3>{track.name}</h3>
-        <p>{track.artist}</p>
-        <div className="player-controls">
-          <button
-            className="play-button"
-            onClick={toggle}
-            disabled={!track.previewUrl}
-            aria-label={playing ? "試聴を停止" : `${track.name}を試聴`}
-          >
-            {playing ? "Ⅱ" : "▶"}
-          </button>
-          <div className="play-progress">
-            <span>{track.previewUrl ? "15秒の試聴" : "試聴音源なし"}</span>
-            <div className="progress-line">
-              <i style={{ width: `${progress}%` }} />
-            </div>
-          </div>
-          <span className="tiny-note">♫</span>
-        </div>
-        <a
-          className="spotify-link"
-          href={track.spotifyUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Spotifyで聴く ↗
-        </a>
-        {error && (
-          <p className="inline-error" role="status">
-            {error}
-          </p>
-        )}
-      </div>
-      {track.previewUrl && (
-        <audio
-          ref={audio}
-          src={track.previewUrl}
-          preload="none"
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          onEnded={() => {
-            setPlaying(false);
-            setProgress(0);
-          }}
-          onError={() => {
-            setPlaying(false);
-            setError("音源にアクセスできません。Spotifyで聴いてみてください。");
-          }}
-          onTimeUpdate={() => {
-            const time = audio.current?.currentTime ?? 0;
-            setProgress(Math.min((time / 15) * 100, 100));
-            if (time >= 15) {
-              stop();
-              if (audio.current) audio.current.currentTime = 0;
-              setProgress(0);
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -731,8 +624,23 @@ export default function MusicApp({ screen }: { screen: Screen }) {
       </div>
       <header className="topbar">
         <Link href="/" className="wordmark">
-          <span className="logo-flower">✿</span>meloop
-          <span className="logo-dot">.</span>
+<span className="logo-pick" aria-hidden="true">
+  <svg viewBox="0 0 48 54" width="36" height="40">
+    <path
+      d="M24 3C13 3 4 7 4 17c0 13 12 29 20 34 8-5 20-21 20-34C44 7 35 3 24 3Z"
+      fill="currentColor"
+    />
+    <path
+      d="M28 15v18m0-18 8-2v7l-8 2"
+      fill="none"
+      stroke="#faf9f5"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <ellipse cx="23" cy="34" rx="6" ry="4" fill="#faf9f5" />
+  </svg>
+</span>          <span className="logo-dot">.</span>
         </Link>
         <span className="brand-caption">好きな音で、つながろう。</span>
         <div className="topbar-actions">
@@ -786,6 +694,13 @@ export default function MusicApp({ screen }: { screen: Screen }) {
           ) : (
             <>
               <section className="hero">
+                <div className="stage-instruments" aria-hidden="true">
+  <span className="instrument guitar">🎸</span>
+  <span className="instrument bass">🎸</span>
+  <span className="instrument drums">🥁</span>
+  <span className="instrument keyboard">🎹</span>
+  <span className="instrument microphone">🎤</span>
+</div>
                 <div className="hero-copy">
                   <span className="eyebrow">
                     A LITTLE MUSIC, A LITTLE CONNECTION.
@@ -821,6 +736,23 @@ export default function MusicApp({ screen }: { screen: Screen }) {
               </section>
               {screen === "home" && (
                 <>
+                <div className="feed-instruments" aria-hidden="true">
+    <span>🎸</span>
+  <span>🥁</span>
+  <span>🎹</span>
+  <span>🎤</span>
+  <span>🎸</span>
+  <span>🎵</span>
+  <span>🎹</span>
+  <span>🎸</span>
+  <span>🎤</span>
+  <span>🥁</span>
+  <span>🎶</span>
+  <span>🎸</span>
+  <span>🎹</span>
+  <span>🎤</span>
+  <span>🎵</span>
+</div>
                   <div className="section-heading">
                     <div>
                       <span className="eyebrow">ON YOUR TIMELINE</span>
@@ -885,12 +817,32 @@ export default function MusicApp({ screen }: { screen: Screen }) {
             </>
           )}
           <footer className="page-footer">
-            <span>✿ meloop</span>
-            <p>音楽を好きな気持ちで、つながっていこう。</p>
-            <small>
-              学習用プロトタイプ · 投稿・リアクション・フォローは保存されません
-            </small>
-          </footer>
+ <span>
+  <svg
+    viewBox="0 0 48 54"
+    width="24"
+    height="28"
+    aria-hidden="true"
+  >
+    <path
+      d="M24 3C13 3 4 7 4 17c0 13 12 29 20 34 8-5 20-21 20-34C44 7 35 3 24 3Z"
+      fill="currentColor"
+    />
+    <path
+      d="M28 15v18m0-18 8-2v7l-8 2"
+      fill="none"
+      stroke="#faf9f5"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <ellipse cx="23" cy="34" rx="6" ry="4" fill="#faf9f5" />
+  </svg>
+  meloop
+</span>
+           <p>音楽を好きな気持ちで、つながっていこう。</p>
+          <small>© Meloop · student project</small>
+        </footer>
         </main>
         <aside className="right-column">
           <section className="daily-note">

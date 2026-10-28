@@ -1,5 +1,6 @@
 "use client";
 
+import FollowConnections from "@/components/follow-connections";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loadMyProfile } from "@/lib/profiles";
@@ -79,7 +80,9 @@ export default function ProfileSummary() {
       <p style={{ whiteSpace: "pre-wrap" }}>
         {profile?.bio || "自己紹介はまだありません。"}
       </p>
-
+{userId && (
+  <FollowConnections key={userId} userId={userId} />
+)}
       <div
         style={{
           display: "flex",

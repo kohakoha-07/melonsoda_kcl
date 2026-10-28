@@ -1,4 +1,6 @@
 "use client";
+
+import FollowConnections from "@/components/follow-connections";
 import ProfileQr from "@/components/profile-qr";
 import FollowButton from "@/components/follow-button";
 import Link from "next/link";
@@ -71,7 +73,9 @@ export default function SharedProfile({ userId }: { userId: string }) {
       <p style={{ whiteSpace: "pre-wrap" }}>
         {profile.bio || "自己紹介はまだありません。"}
       </p>
-<FollowButton key={userId} userId={userId} />
+
+     <FollowConnections key={`connections-${userId}`} userId={userId} />
+<FollowButton key={`follow-${userId}`} userId={userId} />
 <ProfileQr userId={userId} />
 
       <Link href="/" className="button soft">
