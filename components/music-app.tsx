@@ -1,7 +1,7 @@
 "use client";
 
 import AuthStatus from "@/components/auth-status";
-import Player from "@/components/turntable-player";
+import Player from "@/components/spotify-record-player";
 import ProfileSummary from "@/components/profile-summary";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
