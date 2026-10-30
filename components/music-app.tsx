@@ -560,7 +560,7 @@ function Composer() {
     event.preventDefault();
     setBusy(true);
     try {
-      await publishPost(text);
+      await publishPost(text, "3n3Ppam7vgaVa1iaRUc9Lp"); // TODO(B): 選択した曲のIDを使う
       setMessage("投稿しました。");
     } catch (error) {
       setMessage(

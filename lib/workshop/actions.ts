@@ -38,10 +38,26 @@ export async function submitAuth(
 
     return "ログインできました!!";
   }
-  export async function publishPost(text: string): Promise<void> {
-  // TODO(B): 認証を確認し、選択したSpotify曲と本文を保存する。
-  void text;
-  throw new Error("投稿の保存はまだ未接続です。");
+export async function publishPost(
+  text: string,
+  spotifyTrackId: string,
+): Promise<void> {
+  const body = text.trim();
+  if (!body) throw new Error("本文を入力してください。");
+  if (!spotifyTrackId) throw new Error("曲を選んでください。");
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("ログインが必要です。");
+
+  const { error } = await supabase.from("posts").insert({
+    author_id: user.id,
+    spotify_track_id: spotifyTrackId,
+    body,
+  });
+  if (error) throw new Error(error.message);
 }
 export async function addReaction(
   postId: string,
