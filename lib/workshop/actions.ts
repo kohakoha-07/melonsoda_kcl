@@ -1,5 +1,5 @@
-import { createClient } from "../supabase/server";
-
+import { createClient } from "@/lib/supabase/client";
+// 皆さんの穴埋めポイント。docs/TEAM_WORKBOOK.md と一緒に進めてください。
 export async function submitAuth(
   mode: "login" | "signup",
   fields: {
@@ -9,13 +9,35 @@ export async function submitAuth(
   },
 ): Promise<string> {
   // TODO(A): Supabase Authに接続し、エラー・メール確認・セッションを処理する。
-  void mode;
-  void fields;
-  throw new Error(
-    "認証は未接続です。lib/workshop/actions.ts の TODO(A) を実装してください。",
-  );
-}
+  const supabase = createClient();
+  if(mode === "signup") {
+    const { data, error } = await supabase.auth.signUp({
+      email: fields.email.trim(),
+      password: fields.password,
+      options: {
+        data: {
+          username: fields.username.trim(),
+        },
+      },
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
 
+    return data.session
+    ?"登録できました!!ログイン済みです!!"
+    :"確認メールをご確認ください。確認後にログインしてください。";
+  }
+    const { error } = await supabase.auth.signInWithPassword({
+      email: fields.email.trim(),
+      password: fields.password,
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return "ログインできました!!";
+  }
 export async function publishPost(
   text: string,
   spotifyTrackId: string,
@@ -24,7 +46,7 @@ export async function publishPost(
   if (!body) throw new Error("本文を入力してください。");
   if (!spotifyTrackId) throw new Error("曲を選んでください。");
 
-  const supabase = await createClient();
+  const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -36,4 +58,90 @@ export async function publishPost(
     body,
   });
   if (error) throw new Error(error.message);
+}
+export async function addReaction(
+  postId: string,
+  emoji: string,
+): Promise<void> {
+  const supabase = createClient();
+
+  // アプリにログインしているユーザーを確認
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+  if (!user) {
+    throw new Error("リアクションするにはログインしてください。");
+  }
+
+  // 同じリアクションがあれば重複登録しない
+  const { error } = await supabase.from("likes").upsert(
+    {
+      post_id: postId,
+      user_id: user.id,
+      emoji,
+    },
+    {
+      onConflict: "user_id,post_id,emoji",
+      ignoreDuplicates: true,
+    },
+  );
+
+  if (error) throw error;
+}
+export async function removeReaction(
+  postId: string,
+  emoji: string,
+): Promise<void> {
+  const supabase = createClient();
+
+  // ログインユーザーを確認
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+  if (!user) {
+    throw new Error("リアクションを解除するにはログインしてください。");
+  }
+
+  // 自分が、この投稿に付けた、この絵文字だけを削除
+  const { error } = await supabase
+    .from("likes")
+    .delete()
+    .eq("post_id", postId)
+    .eq("user_id", user.id)
+    .eq("emoji", emoji);
+
+  if (error) throw error;
+}
+export async function getMyReactions(
+  postId: string,
+): Promise<string[]> {
+  const supabase = createClient();
+
+  // ログインユーザーを確認
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+
+  // 未ログインなら、選択済みの絵文字はなし
+  if (!user) return [];
+
+  // この投稿に自分が付けた絵文字を取得
+  const { data, error } = await supabase
+    .from("likes")
+    .select("emoji")
+    .eq("post_id", postId)
+    .eq("user_id", user.id);
+
+  if (error) throw error;
+
+  return data.map((reaction) => reaction.emoji);
 }
