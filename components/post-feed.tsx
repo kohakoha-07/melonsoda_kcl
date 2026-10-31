@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { getPosts, getMyFollowing } from "@/lib/workshop/actions";
+import { getPosts, getMyFollowing, deletePost } from "@/lib/workshop/actions";
 import Player from "@/components/spotify-record-player";
 
 type FeedPost = {
@@ -39,6 +39,59 @@ export default function PostFeed({ tab }: { tab: string }) {
   const [error, setError] = useState("");
   const [trackError, setTrackError] = useState("");
   const [revision, setRevision] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const deleteLock = useRef(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let active = true;
+    let authChanged = false;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        authChanged = true;
+        if (active) setUserId(session?.user.id ?? null);
+      },
+    );
+
+    void supabase.auth.getUser().then(({ data, error }) => {
+      if (active && !authChanged) {
+        setUserId(error ? null : data.user?.id ?? null);
+      }
+    }).catch(() => {
+      if (active && !authChanged) setUserId(null);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  async function handleDelete(post: FeedPost) {
+    if (deleteLock.current || !userId || post.authorId !== userId) return;
+    if (!window.confirm("この投稿を削除しますか？削除すると元に戻せません。")) return;
+
+    deleteLock.current = true;
+    setDeletingId(post.id);
+    setDeleteMessage("");
+
+    try {
+      await deletePost(post.id);
+      setPosts((current) => current.filter((item) => item.id !== post.id));
+      setDeleteMessage("投稿を削除しました。");
+    } catch (error) {
+      setDeleteMessage(
+        error instanceof Error ? error.message : "削除できませんでした。",
+      );
+    } finally {
+      deleteLock.current = false;
+      setDeletingId(null);
+    }
+  }
+
 
   useEffect(() => {
     let cancelled = false;
@@ -181,13 +234,14 @@ export default function PostFeed({ tab }: { tab: string }) {
       <button
         type="button"
         className="button soft"
-        disabled={loading}
+        disabled={loading || deletingId !== null}
         onClick={() => setRevision((value) => value + 1)}
       >
         {loading ? "読み込み中…" : "投稿を更新"}
       </button>
 
       {error && <p role="alert">{error}</p>}
+      {deleteMessage && <p role="status">{deleteMessage}</p>}
       {trackError && <p role="status">{trackError}</p>}
 
       {!loading && !error && posts.length === 0 && (
@@ -221,6 +275,19 @@ export default function PostFeed({ tab }: { tab: string }) {
             </header>
 
             <p className="post-text">{post.body}</p>
+
+            {userId && post.authorId === userId && (
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+                <button
+                  type="button"
+                  className="button soft"
+                  disabled={deletingId !== null}
+                  onClick={() => void handleDelete(post)}
+                >
+                  {deletingId === post.id ? "削除中…" : "この投稿を削除"}
+                </button>
+              </div>
+            )}
 
             {post.trackId && (
               <Player
