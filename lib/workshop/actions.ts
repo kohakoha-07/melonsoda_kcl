@@ -290,3 +290,35 @@ export async function getFollowCandidates() {
 
   return data;
 }
+
+export async function deletePost(postId: string): Promise<void> {
+  if (!/^[0-9]+$/.test(postId)) {
+    throw new Error("投稿IDが正しくありません。");
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw new Error(authError.message);
+  if (!user) throw new Error("削除するにはログインしてください。");
+
+  const { data, error } = await supabase
+    .from("posts")
+    .delete()
+    .eq("id", postId)
+    .eq("author_id", user.id)
+    .select("id");
+
+  if (error) {
+    if (error.code === "23503") {
+      throw new Error("関連データがあるため削除できません。postsに関連する外部キー設定の確認が必要です。");
+    }
+    throw new Error(error.message);
+  }
+  if (!data || data.length === 0) {
+    throw new Error("削除できませんでした。自分の投稿か、すでに削除されていないか確認してください。");
+  }
+}
