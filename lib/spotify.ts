@@ -62,3 +62,48 @@ export async function searchSpotify(query: string) {
     artists: data.artists?.items ?? [],
   };
 }
+export async function getSpotifyTracks(ids: string[]) {
+  const token = await getSpotifyToken();
+
+  const tracks: {
+    id: string;
+    name: string;
+    artist: string;
+  }[] = [];
+
+  // 一度に大量の通信をしないよう、5曲ずつ取得する
+  for (let index = 0; index < ids.length; index += 5) {
+    const batch = ids.slice(index, index + 5);
+
+    const results = await Promise.all(
+      batch.map(async (id) => {
+        const response = await fetch(
+          `https://api.spotify.com/v1/tracks/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("Spotifyの曲情報を取得できませんでした。");
+        }
+
+        const track = await response.json();
+
+        return {
+          id: String(track.id),
+          name: String(track.name),
+          artist: track.artists
+            .map((artist: { name: string }) => artist.name)
+            .join(" / "),
+        };
+      }),
+    );
+
+    tracks.push(...results);
+  }
+
+  return tracks;
+}
