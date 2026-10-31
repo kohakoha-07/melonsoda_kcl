@@ -80,7 +80,6 @@ export default function RecordArm({
 
     if (!current.moved) {
       current.moved = true;
-      onPause();
     }
 
     current.angle = Math.max(
