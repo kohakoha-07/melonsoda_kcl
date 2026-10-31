@@ -45,8 +45,7 @@ function SpotifyDeck({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!open) return;
-
+if (!open) return;
     let active = true;
     let created: SpotifyController | null = null;
 
@@ -178,8 +177,7 @@ function SpotifyDeck({
       created?.destroy();
       controller.current = null;
     };
-  }, [open, track.id, playerId]);
-
+}, [open,track.id, playerId]);
   function play() {
     if (!ready || !controller.current) return;
 
@@ -221,22 +219,22 @@ function SpotifyDeck({
           <h3>{track.name}</h3>
           <p>{track.artist}</p>
 
-          {!open ? (
-            <button
-              type="button"
-              className="button soft"
-              onClick={() => setOpen(true)}
-            >
-              Spotifyを準備
-            </button>
-          ) : (
-            <>
-              <p>{ready ? "針を動かして再生・停止" : "Spotifyを準備中…"}</p>
-              <div className={styles.line}>
-                <i style={{ width: `${progress}%` }} />
-              </div>
-            </>
-          )}
+        {!open ? (
+  <button
+    type="button"
+    className="button soft"
+    onClick={() => setOpen(true)}
+  >
+    Spotifyを準備
+  </button>
+) : (
+  <>
+    <p>{ready ? "針を動かして再生・停止" : "Spotifyを準備中…"}</p>
+    <div className={styles.line}>
+      <i style={{ width: `${progress}%` }} />
+    </div>
+  </>
+)}
 
           <a href={track.spotifyUrl} target="_blank" rel="noreferrer">
             Spotifyで聴く ↗
@@ -246,15 +244,15 @@ function SpotifyDeck({
         </div>
       </div>
 
-      {open && (
-        <div>
-          <div ref={container} />
-          <p className="small-print">
-            Spotify公式プレイヤーと連動しています。
-            再生できる範囲はSpotify側の条件によります。
-          </p>
-        </div>
-      )}
+  {open && (
+  <div>
+    <div ref={container} />
+    <p className="small-print">
+      Spotify公式プレイヤーと連動しています。
+      再生できる範囲はSpotify側の条件によります。
+    </p>
+  </div>
+)}
     </div>
   );
 }

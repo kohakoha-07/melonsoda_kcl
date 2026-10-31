@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-// 皆さんの穴埋めポイント。docs/TEAM_WORKBOOK.md と一緒に進めてください。
+
 export async function submitAuth(
   mode: "login" | "signup",
   fields: {
@@ -8,9 +8,9 @@ export async function submitAuth(
     username: string;
   },
 ): Promise<string> {
-  // TODO(A): Supabase Authに接続し、エラー・メール確認・セッションを処理する。
   const supabase = createClient();
-  if(mode === "signup") {
+
+  if (mode === "signup") {
     const { data, error } = await supabase.auth.signUp({
       email: fields.email.trim(),
       password: fields.password,
@@ -20,36 +20,41 @@ export async function submitAuth(
         },
       },
     });
-    if (error) {
-      throw new Error(error.message);
-    }
+
+    if (error) throw new Error(error.message);
 
     return data.session
-    ?"登録できました!!ログイン済みです!!"
-    :"確認メールをご確認ください。確認後にログインしてください。";
+      ? "登録できました!!ログイン済みです!!"
+      : "確認メールをご確認ください。確認後にログインしてください。";
   }
-    const { error } = await supabase.auth.signInWithPassword({
-      email: fields.email.trim(),
-      password: fields.password,
-    });
-    if (error) {
-      throw new Error(error.message);
-    }
 
-    return "ログインできました!!";
-  }
+  const { error } = await supabase.auth.signInWithPassword({
+    email: fields.email.trim(),
+    password: fields.password,
+  });
+
+  if (error) throw new Error(error.message);
+
+  return "ログインできました!!";
+}
+
 export async function publishPost(
   text: string,
   spotifyTrackId: string,
 ): Promise<void> {
   const body = text.trim();
+
   if (!body) throw new Error("本文を入力してください。");
   if (!spotifyTrackId) throw new Error("曲を選んでください。");
 
   const supabase = createClient();
+
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
   if (!user) throw new Error("ログインが必要です。");
 
   const { error } = await supabase.from("posts").insert({
@@ -57,26 +62,41 @@ export async function publishPost(
     spotify_track_id: spotifyTrackId,
     body,
   });
+
   if (error) throw new Error(error.message);
 }
+
+export async function getPosts() {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("posts")
+    .select("id, author_id, spotify_track_id, body, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) throw new Error(error.message);
+
+  return data;
+}
+
 export async function addReaction(
   postId: string,
   emoji: string,
 ): Promise<void> {
   const supabase = createClient();
 
-  // アプリにログインしているユーザーを確認
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
 
   if (authError) throw authError;
+
   if (!user) {
     throw new Error("リアクションするにはログインしてください。");
   }
 
-  // 同じリアクションがあれば重複登録しない
   const { error } = await supabase.from("likes").upsert(
     {
       post_id: postId,
@@ -91,24 +111,24 @@ export async function addReaction(
 
   if (error) throw error;
 }
+
 export async function removeReaction(
   postId: string,
   emoji: string,
 ): Promise<void> {
   const supabase = createClient();
 
-  // ログインユーザーを確認
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
 
   if (authError) throw authError;
+
   if (!user) {
     throw new Error("リアクションを解除するにはログインしてください。");
   }
 
-  // 自分が、この投稿に付けた、この絵文字だけを削除
   const { error } = await supabase
     .from("likes")
     .delete()
@@ -118,23 +138,20 @@ export async function removeReaction(
 
   if (error) throw error;
 }
+
 export async function getMyReactions(
   postId: string,
 ): Promise<string[]> {
   const supabase = createClient();
 
-  // ログインユーザーを確認
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
 
   if (authError) throw authError;
-
-  // 未ログインなら、選択済みの絵文字はなし
   if (!user) return [];
 
-  // この投稿に自分が付けた絵文字を取得
   const { data, error } = await supabase
     .from("likes")
     .select("emoji")
@@ -145,6 +162,30 @@ export async function getMyReactions(
 
   return data.map((reaction) => reaction.emoji);
 }
+
+export async function getReactionCounts(
+  postId: string,
+): Promise<Record<string, number>> {
+  const supabase = createClient();
+  const emojis = ["🤍", "🥰", "🎧", "✨", "🔥"];
+
+  const results = await Promise.all(
+    emojis.map(async (emoji) => {
+      const { count, error } = await supabase
+        .from("likes")
+        .select("*", { count: "exact", head: true })
+        .eq("post_id", postId)
+        .eq("emoji", emoji);
+
+      if (error) throw error;
+
+      return [emoji, count ?? 0] as const;
+    }),
+  );
+
+  return Object.fromEntries(results);
+}
+
 export async function followUser(
   followingId: string,
 ): Promise<void> {
@@ -178,6 +219,7 @@ export async function followUser(
 
   if (error) throw error;
 }
+
 export async function unfollowUser(
   followingId: string,
 ): Promise<void> {
@@ -202,6 +244,7 @@ export async function unfollowUser(
 
   if (error) throw error;
 }
+
 export async function getMyFollowing(): Promise<string[]> {
   const supabase = createClient();
 
@@ -222,6 +265,7 @@ export async function getMyFollowing(): Promise<string[]> {
 
   return data.map((follow) => follow.following_id);
 }
+
 export async function getFollowCandidates() {
   const supabase = createClient();
 
@@ -245,26 +289,4 @@ export async function getFollowCandidates() {
   if (error) throw error;
 
   return data;
-}
-export async function getReactionCounts(
-  postId: string,
-): Promise<Record<string, number>> {
-  const supabase = createClient();
-  const emojis = ["🤍", "🥰", "🎧", "✨", "🔥"];
-
-  const results = await Promise.all(
-    emojis.map(async (emoji) => {
-      const { count, error } = await supabase
-        .from("likes")
-        .select("*", { count: "exact", head: true })
-        .eq("post_id", postId)
-        .eq("emoji", emoji);
-
-      if (error) throw error;
-
-      return [emoji, count ?? 0] as const;
-    }),
-  );
-
-  return Object.fromEntries(results);
 }

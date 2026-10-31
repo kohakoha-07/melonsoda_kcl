@@ -1,5 +1,6 @@
 "use client";
 
+import PostFeed from "@/components/post-feed";
 import AuthStatus from "@/components/auth-status";
 import Player from "@/components/spotify-record-player";
 import ProfileSummary from "@/components/profile-summary";
@@ -205,6 +206,25 @@ type SpotifyArtist = {
   external_urls?: { spotify?: string };
 };
 function Search() {
+  const router = useRouter();
+
+  function selectTrack(track: SpotifyTrack) {
+    try {
+      const selected: Track = {
+        id: track.id,
+        name: track.name,
+        artist: track.artists.map((artist) => artist.name).join(" / "),
+        previewUrl: track.preview_url ?? null,
+        spotifyUrl: track.external_urls?.spotify ??
+          `https://open.spotify.com/track/${track.id}`,
+      };
+      sessionStorage.setItem("meloop:selected-track", JSON.stringify(selected));
+      router.push("/#post-composer");
+    } catch {
+      setState("曲を選択できませんでした。ブラウザの保存設定を確認してください。");
+    }
+  }
+
   const [query, setQuery] = useState("");
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
   const [artists, setArtists] = useState<SpotifyArtist[]>([]);
@@ -306,6 +326,13 @@ function Search() {
               }}
               color="blue"
             />
+            <button
+              type="button"
+              className="button primary"
+              onClick={() => selectTrack(track)}
+            >
+              この曲を投稿する ↗
+            </button>
           </article>
         </Reveal>
       ))}
@@ -551,27 +578,75 @@ function AuthForm({ signup }: { signup: boolean }) {
   );
 }
 
-function Composer() {
+function Composer({ onPosted }: { onPosted: () => void }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const [track, setTrack] = useState<Track | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
+
+  useEffect(() => {
     try {
-      await publishPost(text, "3n3Ppam7vgaVa1iaRUc9Lp"); // TODO(B): 選択した曲のIDを使う
-      setMessage("投稿しました。");
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "投稿できませんでした。",
-      );
-    } finally {
-      setBusy(false);
+      const draft = sessionStorage.getItem("meloop:post-draft");
+      if (draft) {
+        setText(draft);
+        setOpen(true);
+      }
+      const saved = sessionStorage.getItem("meloop:selected-track");
+      if (!saved) return;
+      const selected = JSON.parse(saved);
+      if (
+        typeof selected.id !== "string" ||
+        !/^[A-Za-z0-9]{22}$/.test(selected.id) ||
+        typeof selected.name !== "string" ||
+        typeof selected.artist !== "string"
+      ) return;
+      setTrack(selected);
+      setOpen(true);
+    } catch {
+      setMessage("選択した曲を読み込めませんでした。もう一度曲を選んでください。");
+    }
+  }, []);
+
+  function saveDraft() {
+    try {
+      sessionStorage.setItem("meloop:post-draft", text);
+    } catch {
+      setMessage("下書きを一時保存できませんでした。");
     }
   }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    if (!track) {
+      setMessage("先に「曲をさがす」から曲を選んでください。");
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      await publishPost(text, track.id);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "投稿できませんでした。");
+      setBusy(false);
+      return;
+    }
+    setText("");
+    setTrack(null);
+    setMessage("投稿しました。");
+    try {
+      sessionStorage.removeItem("meloop:post-draft");
+      sessionStorage.removeItem("meloop:selected-track");
+    } catch {
+      // 保存自体は成功しているので、再投稿を促さない。
+    }
+    onPosted();
+    setBusy(false);
+  }
+
   return (
-    <section className="composer">
+    <section className="composer" id="post-composer">
       <div className="composer-top">
         <span className="avatar mint">🎧</span>
         <button onClick={() => setOpen(!open)} aria-expanded={open}>
@@ -580,6 +655,11 @@ function Composer() {
       </div>
       {open && (
         <form onSubmit={submit}>
+          {track ? (
+            <p role="status">選択中：{track.name} ／ {track.artist}</p>
+          ) : (
+            <p>「曲をさがす」から、投稿する曲を選んでください。</p>
+          )}
           <label htmlFor="post-text" className="sr-only">
             投稿するひとこと
           </label>
@@ -587,19 +667,22 @@ function Composer() {
             id="post-text"
             value={text}
             onChange={(event) => setText(event.target.value)}
+            disabled={busy}
             required
             maxLength={280}
             placeholder="この曲を好きな理由を、ひとこと。"
           />
           <div className="composer-bottom">
-            <Link href="/search">♫ 曲をさがす</Link>
-            <button className="button primary" disabled={busy}>
-              {busy ? "確認中…" : "シェアする ↗"}
+            {!busy && (
+              <Link href="/search" onClick={saveDraft}>
+                {track ? "♫ 曲を選び直す" : "♫ 曲をさがす"}
+              </Link>
+            )}
+            <button className="button primary" disabled={busy || !track}>
+              {busy ? "投稿中…" : "シェアする ↗"}
             </button>
           </div>
-          <p className="form-message" role="status">
-            {message || "曲の選択・投稿の保存はこれから接続する部分です。"}
-          </p>
+          <p className="form-message" role="status">{message}</p>
         </form>
       )}
     </section>
@@ -608,6 +691,7 @@ function Composer() {
 
 export default function MusicApp({ screen }: { screen: Screen }) {
   const [tab, setTab] = useState("all");
+  const [feedRevision, setFeedRevision] = useState(0);
   const auth = screen === "login" || screen === "signup";
   return (
     <div className="app-shell">
@@ -783,20 +867,9 @@ export default function MusicApp({ screen }: { screen: Screen }) {
                     >
                       フォロー中
                     </button>
-                    <span>サンプル投稿</span>
                   </div>
-                  <Composer />
-                  {(tab === "all"
-                    ? posts
-                    : posts.filter((post) => post.person.id === "hina")
-                  ).map((post) => (
-                    <Post key={post.id} post={post} />
-                  ))}
-                  {tab === "following" && (
-                    <p className="small-print">
-                      サンプルでは「ひな」をフォロー中として表示しています。フォロー関係の同期はTODO(B)です。
-                    </p>
-                  )}
+                  <Composer onPosted={() => setFeedRevision((value) => value + 1)} />
+<PostFeed key={feedRevision} tab={tab} />
                 </>
               )}
               {screen === "search" && <Search />}
