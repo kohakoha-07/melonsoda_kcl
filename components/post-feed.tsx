@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { getPosts, getMyFollowing, deletePost } from "@/lib/workshop/actions";
+import {
+  getPosts,
+  getMyFollowing,
+  deletePost,
+  addReaction,
+  removeReaction,
+  getMyReactions,
+  getReactionCounts,
+} from "@/lib/workshop/actions";
 import Player from "@/components/spotify-record-player";
 
 type FeedPost = {
@@ -27,6 +35,142 @@ function isUserId(value: unknown): value is string {
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
       value,
     )
+  );
+}
+
+const REACTION_EMOJIS = ["🤍", "🥰", "🎧", "✨", "🔥"];
+
+function reactionMessage(error: unknown): string {
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String(error.message);
+  }
+  return "リアクションを処理できませんでした。";
+}
+
+function PostReactions({
+  postId,
+  userId,
+}: {
+  postId: string;
+  userId: string | null;
+}) {
+  const [selected, setSelected] = useState<string[]>([]);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [revision, setRevision] = useState(0);
+  const lock = useRef(false);
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+
+    async function load() {
+      try {
+        const [emojis, totals] = await Promise.all([
+          userId ? getMyReactions(postId) : Promise.resolve([]),
+          getReactionCounts(postId),
+        ]);
+        if (!cancelled) {
+          setSelected(emojis);
+          setCounts(totals);
+        }
+      } catch (error) {
+        if (!cancelled) setError(reactionMessage(error));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => { cancelled = true; };
+  }, [postId, userId, revision]);
+
+  async function toggle(emoji: string) {
+    if (!userId || loading || error || lock.current) return;
+    lock.current = true;
+    setSaving(true);
+
+    try {
+      if (selected.includes(emoji)) {
+        await removeReaction(postId, emoji);
+      } else {
+        await addReaction(postId, emoji);
+      }
+
+      // 保存後の値を読み直して、件数と選択状態を合わせる。
+      const [emojis, totals] = await Promise.all([
+        getMyReactions(postId),
+        getReactionCounts(postId),
+      ]);
+      if (mounted.current) {
+        setSelected(emojis);
+        setCounts(totals);
+      }
+    } catch (error) {
+      if (mounted.current) {
+        setError(reactionMessage(error));
+      }
+    } finally {
+      lock.current = false;
+      if (mounted.current) setSaving(false);
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 20 }}>
+      <div
+        className="reactions"
+        role="group"
+        aria-label="投稿へのリアクション"
+        aria-busy={loading || saving}
+        style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
+      >
+        {REACTION_EMOJIS.map((emoji) => (
+          <button
+            key={emoji}
+            type="button"
+            aria-label={`${emoji}でリアクション ${counts[emoji] ?? 0}件`}
+            aria-pressed={selected.includes(emoji)}
+            disabled={!userId || loading || saving || Boolean(error)}
+            onClick={() => void toggle(emoji)}
+            style={selected.includes(emoji) ? {
+              background: "#e2eddf",
+              borderColor: "#7f9b7d",
+              color: "#365844",
+            } : undefined}
+          >
+            <span aria-hidden="true">{emoji}</span>
+            <span>{loading || error ? "—" : counts[emoji] ?? 0}</span>
+          </button>
+        ))}
+      </div>
+
+      {loading && <p className="small-print" role="status">リアクションを読み込み中…</p>}
+      {!userId && <p className="small-print">リアクションするにはログインしてください。</p>}
+      {saving && <p className="small-print" role="status">保存中…</p>}
+      {error && (
+        <div>
+          <p role="alert">{error}</p>
+          <button
+            type="button"
+            className="button soft"
+            disabled={loading || saving}
+            onClick={() => setRevision((value) => value + 1)}
+          >
+            リアクションを再読み込み
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -306,6 +450,11 @@ export default function PostFeed({ tab }: { tab: string }) {
                 color="pink"
               />
             )}
+            <PostReactions
+              key={`${post.id}-${userId ?? "guest"}`}
+              postId={post.id}
+              userId={userId}
+            />
           </article>
         ))}
     </section>
