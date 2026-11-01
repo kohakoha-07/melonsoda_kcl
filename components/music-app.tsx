@@ -1,6 +1,7 @@
 "use client";
 
 import UserAvatar from "@/components/user-avatar";
+import LiveCalendar from "@/components/live-calendar";
 import { createClient } from "@/lib/supabase/client";
 
 import PostFeed from "@/components/post-feed";
@@ -30,7 +31,7 @@ import {
   getFollowCandidates,
 } from "@/lib/workshop/actions";
 
-type Screen = "home" | "search" | "following" | "profile" | "login" | "signup";
+type Screen = "home" | "live" | "search" | "following" | "profile" | "login" | "signup";
 const navigation: {
   screen: Screen;
   href: string;
@@ -38,8 +39,9 @@ const navigation: {
   text: string;
 }[] = [
   { screen: "home", href: "/", icon: "⌂", text: "ホーム" },
-  { screen: "search", href: "/search", icon: "⌕", text: "音楽をさがす" },
+  { screen: "live", href: "/live", icon: "♫", text: "ライブ" },
   { screen: "following", href: "/following", icon: "♧", text: "フォロー" },
+  { screen: "search", href: "/search", icon: "⌕", text: "音楽をさがす" },
   { screen: "profile", href: "/profile", icon: "☺", text: "プロフィール" },
 ];
 
@@ -793,9 +795,9 @@ export default function MusicApp({ screen }: { screen: Screen }) {
 </span>          <span className="logo-dot">.</span>
         </Link>
         <span className="brand-caption">好きな音で、つながろう。</span>
-        <div className="topbar-actions">
-          <AuthStatus />
-        </div>
+         <div className="topbar-actions">
+  <AuthStatus />
+</div>        
       </header>
       <div className="workspace">
         <aside className="sidebar">
@@ -843,6 +845,7 @@ export default function MusicApp({ screen }: { screen: Screen }) {
             <AuthForm signup={screen === "signup"} />
           ) : (
             <>
+              {screen !== "live" && (
               <section className="hero">
                 <div className="stage-instruments" aria-hidden="true">
   <span className="instrument guitar">🎸</span>
@@ -884,6 +887,7 @@ export default function MusicApp({ screen }: { screen: Screen }) {
                   <span className="orbit-note n3">♫</span>
                 </div>
               </section>
+              )}
               {screen === "home" && (
                 <>
                 <div className="feed-instruments" aria-hidden="true">
@@ -938,6 +942,7 @@ export default function MusicApp({ screen }: { screen: Screen }) {
 <PostFeed key={feedRevision} tab={tab} />
                 </>
               )}
+              {screen === "live" && <LiveCalendar />}
               {screen === "search" && <Search />}
               {screen === "following" && <Following />}
               {screen === "profile" && (
