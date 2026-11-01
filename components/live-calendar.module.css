@@ -1,0 +1,62 @@
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.heading h1 { margin: 8px 0; font-size: clamp(28px, 5vw, 40px); }
+.eyebrow { font: 11px Arial, sans-serif; letter-spacing: 2px; color: #748873; }
+.caption { font-size: 13px; line-height: 1.8; color: #687565; }
+.toolbar { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; margin: 24px 0 16px; }
+.toolbar h2 { margin: 0 8px; font-size: 23px; }
+.toolbar button { padding: 10px 15px; min-height: 44px; }
+.calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid #dce3d7; border-radius: 16px; overflow: hidden; background: #dce3d7; gap: 1px; }
+.weekday { background: #edf2e8; text-align: center; padding: 10px 0; font-size: 14px; }
+.weekday:first-child { color: #a8546b; }
+.weekday:nth-child(7) { color: #547ca5; }
+.blank { background: #f3f5ef; min-height: 104px; }
+.day { appearance: none; border: 0; padding: 8px 5px; min-height: 104px; background: #fffefa; color: inherit; text-align: left; font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.day:hover { background: #f0f5eb; }
+.day:focus-visible { outline: 3px solid #436957; outline-offset: -3px; }
+.selected { box-shadow: inset 0 0 0 2px #436957; background: #f1f6eb; }
+.dayNumber, .today { display: inline-flex; justify-content: center; align-items: center; width: 26px; height: 26px; font-size: 14px; flex-shrink: 0; }
+.today { background: #436957; border-radius: 50%; color: white; }
+.badges { display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 0; }
+.badge { display: flex; align-items: center; justify-content: space-between; border-left: 3px solid; border-radius: 4px; padding: 3px; min-height: 20px; min-width: 0; }
+.badgeTitle { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dot { display: none; width: 7px; height: 7px; border-radius: 50%; }
+.more { font-size: 11px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 24px; font-size: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 12px; height: 12px; border: 1px solid; border-radius: 50%; }
+.panel, .event, .editor { border: 1px solid #dce3d7; border-radius: 18px; padding: 22px; margin: 16px 0; background: #fffefa; overflow-wrap: anywhere; }
+.event { border-top-width: 5px; }
+.event h3 { margin: 8px 0; font-size: 24px; }
+.artist { font-size: 18px; }
+.colorName { font-size: 12px; }
+.facts { display: grid; grid-template-columns: 50px minmax(0, 1fr); gap: 8px 12px; }
+.facts dt { color: #657660; }
+.facts dd { margin: 0; }
+.note { white-space: pre-wrap; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.actions :global(.button) { padding: 12px 16px; }
+.person { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; font-size: 14px; }
+.people { display: flex; flex-wrap: wrap; gap: 12px; }
+.fields { border: 0; padding: 0; margin: 0; display: grid; gap: 16px; min-width: 0; }
+.fields > label, .twoColumns > label { display: flex; flex-direction: column; gap: 7px; font-size: 14px; min-width: 0; }
+.fields input:not([type="radio"]), .fields textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 12px; border: 1px solid #ccd8c5; border-radius: 10px; background: #fff; color: inherit; font: inherit; font-size: 16px; }
+.twoColumns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.colorPicker { display: flex; flex-wrap: wrap; gap: 8px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.colorPicker legend { margin-bottom: 10px; font-size: 14px; }
+.colorPicker label { display: inline-flex; align-items: center; gap: 6px; padding: 10px; border: 2px solid; border-radius: 12px; cursor: pointer; font-size: 14px; }
+.colorPicker input { width: 16px; height: 16px; accent-color: #436957; }
+.notice { border-radius: 12px; background: #edf2e8; padding: 12px; white-space: pre-wrap; }
+.details h2 { font-size: 23px; scroll-margin-top: 20px; }
+.details h2:focus { outline: none; }
+.root button:disabled { cursor: not-allowed; opacity: .55; }
+@media (max-width: 560px) {
+  .day, .blank { min-height: 86px; }
+  .day { padding: 6px 3px; }
+  .badge { min-height: 12px; height: 12px; padding: 2px; }
+  .badgeTitle { display: none; }
+  .dot { display: block; }
+  .panel, .event, .editor { padding: 16px; }
+  .toolbar { gap: 6px; }
+  .toolbar h2 { font-size: 19px; margin: 0 3px; }
+  .twoColumns { grid-template-columns: minmax(0, 1fr); }
+}
