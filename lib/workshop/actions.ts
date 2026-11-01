@@ -66,12 +66,18 @@ export async function publishPost(
   if (error) throw new Error(error.message);
 }
 
-export async function getPosts() {
+export async function getPosts(authorId?: string) {
   const supabase = createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("posts")
-    .select("id, author_id, spotify_track_id, body, created_at")
+    .select("id, author_id, spotify_track_id, body, created_at");
+
+  if (authorId) {
+    query = query.eq("author_id", authorId);
+  }
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -79,6 +85,7 @@ export async function getPosts() {
 
   return data;
 }
+
 
 export async function addReaction(
   postId: string,

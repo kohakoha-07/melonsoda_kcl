@@ -1,5 +1,8 @@
 "use client";
 
+import UserAvatar from "@/components/user-avatar";
+import { createClient } from "@/lib/supabase/client";
+
 import PostFeed from "@/components/post-feed";
 import AuthStatus from "@/components/auth-status";
 import Player from "@/components/spotify-record-player";
@@ -349,6 +352,8 @@ function Following() {
       user_id: string;
       username: string | null;
       bio: string | null;
+      avatar_url?: string | null;
+      avatar_emoji?: string | null;
     }[]
   >([]);
   const [following, setFollowing] = useState<string[]>([]);
@@ -367,8 +372,24 @@ function Following() {
           getMyFollowing(),
         ]);
 
+        const ids = candidates.map((person) => person.user_id);
+        const avatarMap = new Map<string, { avatar_url: string | null; avatar_emoji: string | null }>();
+        if (ids.length > 0) {
+          const supabase = createClient();
+          const { data, error } = await supabase.from("profiles")
+            .select("user_id, avatar_url, avatar_emoji").in("user_id", ids);
+          if (error) throw new Error(error.message);
+          for (const profile of data ?? []) {
+            avatarMap.set(profile.user_id, profile);
+          }
+        }
+
         if (!cancelled) {
-          setUsers(candidates);
+          setUsers(candidates.map((person) => ({
+            ...person,
+            avatar_url: avatarMap.get(person.user_id)?.avatar_url ?? null,
+            avatar_emoji: avatarMap.get(person.user_id)?.avatar_emoji ?? "🎧",
+          })));
           setFollowing(followingIds);
         }
       } catch (error) {
@@ -455,7 +476,8 @@ function Following() {
           {users.map((person) => (
             <Reveal key={person.user_id}>
               <article className="person-card">
-                <span className="avatar large pink">♫</span>
+                <UserAvatar url={person.avatar_url} emoji={person.avatar_emoji}
+                  name={person.username || "ユーザー"} className="avatar large pink" />
 
                 <div>
                   <h3>{person.username || "名前未設定"}</h3>
@@ -578,6 +600,50 @@ function AuthForm({ signup }: { signup: boolean }) {
   );
 }
 
+function CurrentUserAvatar() {
+  const [avatar, setAvatar] = useState<{ url: string | null; emoji: string; name: string }>({
+    url: null, emoji: "🎧", name: "あなた",
+  });
+  useEffect(() => {
+    const supabase = createClient();
+    let active = true;
+    let generation = 0;
+    async function load() {
+      const current = ++generation;
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError) throw authError;
+        if (!active || current !== generation) return;
+        if (!user) { setAvatar({ url: null, emoji: "🎧", name: "あなた" }); return; }
+        const { data, error } = await supabase.from("profiles")
+          .select("username, avatar_url, avatar_emoji").eq("user_id", user.id).maybeSingle();
+        if (error) throw error;
+        if (active && current === generation) setAvatar({
+          url: data?.avatar_url || null,
+          emoji: data?.avatar_emoji || "🎧",
+          name: data?.username || "あなた",
+        });
+      } catch {
+        if (active && current === generation) setAvatar({ url: null, emoji: "🎧", name: "あなた" });
+      }
+    }
+    void load();
+    const refresh = () => { void load(); };
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      // 認証イベント内では非同期のSupabase処理を直接待たない。
+      window.setTimeout(() => { if (active) void load(); }, 0);
+    });
+    window.addEventListener("focus", refresh);
+    return () => {
+      active = false;
+      generation += 1;
+      subscription.unsubscribe();
+      window.removeEventListener("focus", refresh);
+    };
+  }, []);
+  return <UserAvatar url={avatar.url} emoji={avatar.emoji} name={avatar.name} />;
+}
+
 function Composer({ onPosted }: { onPosted: () => void }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -648,7 +714,7 @@ function Composer({ onPosted }: { onPosted: () => void }) {
   return (
     <section className="composer" id="post-composer">
       <div className="composer-top">
-        <span className="avatar mint">🎧</span>
+        <CurrentUserAvatar />
         <button onClick={() => setOpen(!open)} aria-expanded={open}>
           いま、どんな音楽を聴いてる？<span>＋</span>
         </button>
@@ -762,7 +828,7 @@ export default function MusicApp({ screen }: { screen: Screen }) {
             <small>SHARE YOUR LITTLE FAVORITE</small>
           </div>
           <div className="sidebar-user">
-            <span className="avatar mint">🎧</span>
+            <CurrentUserAvatar />
             <div>
               <b>音楽好きのあなた</b>
               <small>ゲスト / サンプル表示</small>
