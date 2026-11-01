@@ -1,5 +1,7 @@
 "use client";
 
+import UserAvatar from "@/components/user-avatar";
+
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -8,6 +10,8 @@ type Comment = {
   id: string;
   authorId: string;
   name: string;
+  avatarUrl: string | null;
+  avatarEmoji: string;
   body: string;
   createdAt: string;
 };
@@ -77,11 +81,16 @@ function CommentPanel({ postId, userId }: { postId: string; userId: string }) {
         const visible = (data ?? []).slice(0, PAGE_SIZE);
         const ids = [...new Set(visible.map((row) => row.author_id))];
         const names = new Map<string, string>();
+        const avatars = new Map<string, { url: string | null; emoji: string }>();
         if (ids.length) {
           const { data: profiles, error: profileError } = await supabase
-            .from("profiles").select("user_id, username").in("user_id", ids);
+            .from("profiles").select("user_id, username, avatar_url, avatar_emoji").in("user_id", ids);
           if (profileError) throw profileError;
           for (const profile of profiles ?? []) {
+            avatars.set(profile.user_id, {
+              url: profile.avatar_url || null,
+              emoji: profile.avatar_emoji || "🎧",
+            });
             names.set(profile.user_id, profile.username || "名前未設定");
           }
         }
@@ -89,6 +98,8 @@ function CommentPanel({ postId, userId }: { postId: string; userId: string }) {
           setComments(visible.map((row) => ({
             id: String(row.id), authorId: row.author_id,
             name: names.get(row.author_id) || "名前未設定",
+            avatarUrl: avatars.get(row.author_id)?.url ?? null,
+            avatarEmoji: avatars.get(row.author_id)?.emoji ?? "🎧",
             body: row.body, createdAt: row.created_at,
           })));
           setHasNext((data?.length ?? 0) > PAGE_SIZE);
@@ -199,7 +210,12 @@ function CommentPanel({ postId, userId }: { postId: string; userId: string }) {
           {comments.length === 0 && <p>コメントはまだありません。</p>}
           {comments.map((comment) => (
             <article key={comment.id} style={{ padding: "16px 0", borderBottom: "1px solid #e3e8df" }}>
-              <Link href={`/profile/${comment.authorId}`}><b>{comment.name}</b></Link>
+              <Link href={`/profile/${comment.authorId}`}
+                style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                <UserAvatar url={comment.avatarUrl} emoji={comment.avatarEmoji}
+                  name={comment.name} size={40} />
+                <b>{comment.name}</b>
+              </Link>
               <time dateTime={comment.createdAt} style={{ display: "block", fontSize: 12 }}>
                 {new Date(comment.createdAt).toLocaleString("ja-JP")}
               </time>

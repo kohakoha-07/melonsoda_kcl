@@ -1,5 +1,7 @@
 "use client";
 
+import UserAvatar from "@/components/user-avatar";
+
 import PostComments from "@/components/post-comments";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -19,6 +21,8 @@ type FeedPost = {
   id: string;
   authorId: string | null;
   name: string;
+  avatarUrl: string | null;
+  avatarEmoji: string;
   body: string;
   trackId: string;
   createdAt: string;
@@ -175,7 +179,13 @@ function PostReactions({
   );
 }
 
-export default function PostFeed({ tab }: { tab: string }) {
+export default function PostFeed({
+  tab,
+  authorId,
+}: {
+  tab: string;
+  authorId?: string;
+}) {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [trackInfo, setTrackInfo] = useState<
     Record<string, TrackInfo>
@@ -249,8 +259,7 @@ export default function PostFeed({ tab }: { tab: string }) {
       setTrackInfo({});
 
       try {
-        const rows = await getPosts();
-
+const rows = await getPosts(authorId);
         const following =
           tab === "following" ? await getMyFollowing() : [];
 
@@ -270,18 +279,23 @@ export default function PostFeed({ tab }: { tab: string }) {
         ];
 
         const names = new Map<string, string>();
+        const avatars = new Map<string, { url: string | null; emoji: string }>();
 
         if (authorIds.length > 0) {
           const supabase = createClient();
 
           const { data, error } = await supabase
             .from("profiles")
-            .select("user_id, username")
+            .select("user_id, username, avatar_url, avatar_emoji")
             .in("user_id", authorIds);
 
           if (error) throw new Error(error.message);
 
           for (const profile of data ?? []) {
+            avatars.set(profile.user_id, {
+              url: profile.avatar_url || null,
+              emoji: profile.avatar_emoji || "🎧",
+            });
             names.set(
               profile.user_id,
               profile.username || "名前未設定",
@@ -302,6 +316,8 @@ export default function PostFeed({ tab }: { tab: string }) {
             name:
               (authorId ? names.get(authorId) : null) ||
               "名前未設定",
+            avatarUrl: authorId ? avatars.get(authorId)?.url ?? null : null,
+            avatarEmoji: authorId ? avatars.get(authorId)?.emoji ?? "🎧" : "🎧",
             body: row.body,
             trackId: row.spotify_track_id ?? "",
             createdAt: row.created_at,
@@ -372,8 +388,7 @@ export default function PostFeed({ tab }: { tab: string }) {
       cancelled = true;
       abortController.abort();
     };
-  }, [tab, revision]);
-
+}, [tab, revision, authorId]);
   return (
     <section aria-label="投稿一覧">
       <button
@@ -402,7 +417,7 @@ export default function PostFeed({ tab }: { tab: string }) {
         posts.map((post) => (
           <article className="post-card" key={post.id}>
             <header className="post-author">
-              <span className="avatar mint">🎧</span>
+              <UserAvatar url={post.avatarUrl} emoji={post.avatarEmoji} name={post.name} />
 
               <div>
                 {post.authorId ? (
