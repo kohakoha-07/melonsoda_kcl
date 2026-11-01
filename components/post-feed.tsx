@@ -1,5 +1,6 @@
 "use client";
 
+import PostComments from "@/components/post-comments";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -455,6 +456,7 @@ export default function PostFeed({ tab }: { tab: string }) {
               postId={post.id}
               userId={userId}
             />
+            <PostComments postId={post.id} userId={userId} />
           </article>
         ))}
     </section>
