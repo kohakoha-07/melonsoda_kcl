@@ -1,5 +1,7 @@
 "use client";
 
+import MeloopLogo from "@/components/meloop-logo";
+
 import UserAvatar from "@/components/user-avatar";
 import LiveCalendar from "@/components/live-calendar";
 import { createClient } from "@/lib/supabase/client";
@@ -775,25 +777,9 @@ export default function MusicApp({ screen }: { screen: Screen }) {
         <span>♪</span>
       </div>
       <header className="topbar">
-        <Link href="/" className="wordmark">
-<span className="logo-pick" aria-hidden="true">
-  <svg viewBox="0 0 48 54" width="36" height="40">
-    <path
-      d="M24 3C13 3 4 7 4 17c0 13 12 29 20 34 8-5 20-21 20-34C44 7 35 3 24 3Z"
-      fill="currentColor"
-    />
-    <path
-      d="M28 15v18m0-18 8-2v7l-8 2"
-      fill="none"
-      stroke="#faf9f5"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <ellipse cx="23" cy="34" rx="6" ry="4" fill="#faf9f5" />
-  </svg>
-</span>          <span className="logo-dot">.</span>
-        </Link>
+        <Link href="/" className="wordmark" aria-label="meloop ホームへ">
+  <MeloopLogo />
+</Link>
         <span className="brand-caption">好きな音で、つながろう。</span>
          <div className="topbar-actions">
   <AuthStatus />
@@ -961,29 +947,7 @@ export default function MusicApp({ screen }: { screen: Screen }) {
             </>
           )}
           <footer className="page-footer">
- <span>
-  <svg
-    viewBox="0 0 48 54"
-    width="24"
-    height="28"
-    aria-hidden="true"
-  >
-    <path
-      d="M24 3C13 3 4 7 4 17c0 13 12 29 20 34 8-5 20-21 20-34C44 7 35 3 24 3Z"
-      fill="currentColor"
-    />
-    <path
-      d="M28 15v18m0-18 8-2v7l-8 2"
-      fill="none"
-      stroke="#faf9f5"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <ellipse cx="23" cy="34" rx="6" ry="4" fill="#faf9f5" />
-  </svg>
-  meloop
-</span>
+            <span className="meloop-footer-logo"><MeloopLogo /></span>
            <p>音楽を好きな気持ちで、つながっていこう。</p>
           <small>© Meloop · student project</small>
         </footer>

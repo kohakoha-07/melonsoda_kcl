@@ -1813,3 +1813,65 @@ button {
     justify-content: center;
   }
 }
+
+
+/* レコードの「oo」と音符の「p」を使った共通ロゴ */
+.meloop-logo {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: #436957;
+  font-size: 40px;
+  vertical-align: middle;
+}
+.meloop-logo-art {
+  display: inline-flex;
+  align-items: baseline;
+  position: relative;
+  gap: 0;
+  padding-right: .1em;
+  font-family: "Arial Rounded MT Bold", "Trebuchet MS", Arial, sans-serif;
+  font-weight: 800;
+  font-style: normal;
+  line-height: 1.2;
+  letter-spacing: -.055em;
+}
+.meloop-logo-pick {
+  flex-shrink: 0;
+  align-self: center;
+  width: .69em;
+  height: .8em;
+  margin-right: .18em;
+  transform: rotate(-12deg);
+}
+.meloop-logo-letters { display: inline-block; }
+.meloop-logo-disc {
+  display: block;
+  flex-shrink: 0;
+  align-self: baseline;
+  width: .55em;
+  height: .55em;
+  margin-left: .015em;
+  transform: translateY(.012em);
+}
+.meloop-logo-disc-second { transform: translateY(.012em) rotate(24deg); }
+.meloop-logo-note {
+  position: relative;
+  display: inline-block;
+  margin-left: .025em;
+  letter-spacing: -.03em;
+}
+.meloop-logo-flag {
+  position: absolute;
+  top: .05em;
+  right: -.15em;
+  width: .26em;
+  height: .29em;
+  transform: rotate(-7deg);
+}
+.meloop-logo-dot { color: #c58d82; margin-left: .015em; }
+.wordmark:focus-visible { outline: 3px solid #436957; outline-offset: 6px; border-radius: 6px; }
+.page-footer .meloop-logo { font-size: 32px; }
+@media (max-width: 760px) {
+  .wordmark .meloop-logo { font-size: 32px; }
+  .page-footer .meloop-logo { font-size: 29px; }
+}
