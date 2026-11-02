@@ -778,8 +778,8 @@ export default function MusicApp({ screen }: { screen: Screen }) {
       </div>
       <header className="topbar">
         <Link href="/" className="wordmark" aria-label="meloop ホームへ">
-          <MeloopLogo />
-        </Link>
+  <MeloopLogo />
+</Link>
         <span className="brand-caption">好きな音で、つながろう。</span>
          <div className="topbar-actions">
   <AuthStatus />
