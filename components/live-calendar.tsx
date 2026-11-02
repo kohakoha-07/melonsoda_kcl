@@ -21,7 +21,10 @@ function shiftMonth(month: string, amount: number) {
 }
 function colors(value: string) { return LIVE_COLORS.find((color) => color.value === value) ?? LIVE_COLORS[0]; }
 
-export default function LiveCalendar() {
+export default function LiveCalendar({ initialDate, initialEventId }: {
+  initialDate?: string;
+  initialEventId?: string;
+} = {}) {
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const [authError, setAuthError] = useState("");
   useEffect(() => {
@@ -48,13 +51,17 @@ export default function LiveCalendar() {
     {authError && <p role="alert">{authError}</p>}
     <Link href="/login" className="button primary">ログインする</Link>
   </section>;
-  return <CalendarBody key={userId} userId={userId} />;
+  return <CalendarBody key={`${userId}-${initialDate ?? "today"}-${initialEventId ?? ""}`} userId={userId} initialDate={initialDate} initialEventId={initialEventId} />;
 }
 
-function CalendarBody({ userId }: { userId: string }) {
+function CalendarBody({ userId, initialDate, initialEventId }: {
+  userId: string;
+  initialDate?: string;
+  initialEventId?: string;
+}) {
   const [today] = useState(todayInJapan);
-  const [month, setMonth] = useState(() => today.slice(0, 7));
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [month, setMonth] = useState(() => (initialDate || today).slice(0, 7));
+  const [selectedDate, setSelectedDate] = useState(initialDate || today);
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -76,6 +83,21 @@ function CalendarBody({ userId }: { userId: string }) {
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [month, revision]);
+
+  const targetFocused = useRef(false);
+  useEffect(() => {
+    if (loading || loadError || !initialEventId || targetFocused.current) return;
+    if (!events.some((event) => event.id === initialEventId)) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(`live-event-${initialEventId}`);
+      if (target) {
+        targetFocused.current = true;
+        target.scrollIntoView({ block: "center" });
+        target.focus({ preventScroll: true });
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [loading, loadError, initialEventId, events]);
 
   function moveMonth(amount: number) {
     const next = shiftMonth(month, amount);
@@ -179,7 +201,7 @@ function CalendarBody({ userId }: { userId: string }) {
           const mine = event.authorId === userId;
           const joined = event.attendees.some((person) => person.id === userId);
           const link = officialLink(event.officialUrl);
-          return <article key={event.id} className={styles.event} style={{ borderTopColor: color.border, background: color.background }}>
+          return <article key={event.id} id={`live-event-${event.id}`} tabIndex={-1} className={styles.event} style={{ borderTopColor: color.border, background: color.background }}>
             <span className={styles.colorName}>{color.label}の予定</span>
             <h3>{event.title}</h3><p className={styles.artist}>{event.artist}</p>
             <dl className={styles.facts}>
