@@ -1,5 +1,7 @@
 "use client";
 
+import NotificationBell from "@/components/notification-bell";
+
 import MeloopLogo from "@/components/meloop-logo";
 
 import UserAvatar from "@/components/user-avatar";
@@ -782,6 +784,7 @@ export default function MusicApp({ screen }: { screen: Screen }) {
 </Link>
         <span className="brand-caption">好きな音で、つながろう。</span>
          <div className="topbar-actions">
+  <NotificationBell />
   <AuthStatus />
 </div>        
       </header>

@@ -1,5 +1,7 @@
 "use client";
 
+import { loadNotificationPost } from "@/lib/notifications";
+
 import UserAvatar from "@/components/user-avatar";
 
 import PostComments from "@/components/post-comments";
@@ -182,9 +184,11 @@ function PostReactions({
 export default function PostFeed({
   tab,
   authorId,
+  postId,
 }: {
   tab: string;
   authorId?: string;
+  postId?: string;
 }) {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [trackInfo, setTrackInfo] = useState<
@@ -259,7 +263,7 @@ export default function PostFeed({
       setTrackInfo({});
 
       try {
-const rows = await getPosts(authorId);
+const rows = postId ? await loadNotificationPost(postId) : await getPosts(authorId);
         const following =
           tab === "following" ? await getMyFollowing() : [];
 
@@ -388,7 +392,7 @@ const rows = await getPosts(authorId);
       cancelled = true;
       abortController.abort();
     };
-}, [tab, revision, authorId]);
+}, [tab, revision, authorId, postId]);
   return (
     <section aria-label="投稿一覧">
       <button
@@ -406,9 +410,11 @@ const rows = await getPosts(authorId);
 
       {!loading && !error && posts.length === 0 && (
         <p className="status">
-          {tab === "following"
-            ? "フォロー中の人の投稿はまだありません。"
-            : "表示できる投稿はまだありません。"}
+          {postId
+            ? "この投稿は削除されたか、閲覧する権限がありません。"
+            : tab === "following"
+              ? "フォロー中の人の投稿はまだありません。"
+              : "表示できる投稿はまだありません。"}
         </p>
       )}
 
