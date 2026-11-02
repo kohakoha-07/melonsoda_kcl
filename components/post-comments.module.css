@@ -1,0 +1,34 @@
+.root {
+  margin-top: 20px;
+}
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid #cbdac5;
+  border-radius: 50%;
+  background: #f1f5ec;
+  color: #436957;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.toggle:hover {
+  background: #e4eddf;
+  border-color: #96b08b;
+}
+.toggle:focus-visible {
+  outline: 3px solid #436957;
+  outline-offset: 4px;
+}
+.active {
+  background: #dce9d5;
+  border-color: #73936a;
+}
+.toggle svg {
+  display: block;
+  flex-shrink: 0;
+}

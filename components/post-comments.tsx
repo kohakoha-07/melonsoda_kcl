@@ -1,5 +1,7 @@
 "use client";
 
+import styles from "./post-comments.module.css";
+
 import UserAvatar from "@/components/user-avatar";
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
@@ -27,19 +29,48 @@ export default function PostComments({ postId, userId }: {
   userId: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const label = open ? "コメントを閉じる" : "コメントを開く";
+
   return (
-    <section style={{ marginTop: 20 }} aria-label="コメント">
-      <button type="button" className="button soft" aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}>
-        {open ? "コメントを閉じる" : "コメントを見る・書く"}
+    <section className={styles.root} aria-label="コメント">
+      <button
+        type="button"
+        className={`${styles.toggle} ${open ? styles.active : ""}`}
+        aria-label={label}
+        title={label}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          viewBox="0 0 28 28"
+          width="26"
+          height="26"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M24 13.2c0 5.2-4.5 9.3-10 9.3a11 11 0 0 1-4.3-.8L4 24l1.5-5.4A8.6 8.6 0 0 1 4 13.2C4 8 8.5 4 14 4s10 4 10 9.2Z" />
+          <circle cx="9.5" cy="13.2" r=".8" fill="currentColor" stroke="none" />
+          <circle cx="14" cy="13.2" r=".8" fill="currentColor" stroke="none" />
+          <circle cx="18.5" cy="13.2" r=".8" fill="currentColor" stroke="none" />
+        </svg>
       </button>
-      {open && (
-        userId ? (
-          <CommentPanel key={`${postId}-${userId}`} postId={postId} userId={userId} />
-        ) : (
-          <p>コメントを見る・書くには<Link href="/login">ログイン</Link>してください。</p>
-        )
-      )}
+
+      <div id={panelId} hidden={!open}>
+        {open && (
+          userId ? (
+            <CommentPanel key={`${postId}-${userId}`} postId={postId} userId={userId} />
+          ) : (
+            <p>コメントを見る・書くには<Link href="/login">ログイン</Link>してください。</p>
+          )
+        )}
+      </div>
     </section>
   );
 }
