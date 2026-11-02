@@ -21,7 +21,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { people, posts, type Track } from "@/lib/workshop/data";
+import { posts, type Track } from "@/lib/workshop/data";
 import {
   publishPost,
   submitAuth,
@@ -868,8 +868,29 @@ export default function MusicApp({ screen }: { screen: Screen }) {
                   <div className="hero-record">
                     <div>
                       <small>GOOD MUSIC</small>
-                      <b>✿</b>
-                      <small>GOOD DAYS</small>
+                    <b>
+  <svg
+    viewBox="0 0 48 54"
+    width="36"
+    height="40"
+    aria-hidden="true"
+  >
+    <path
+      d="M24 3C13 3 4 7 4 17c0 13 12 29 20 34 8-5 20-21 20-34C44 7 35 3 24 3Z"
+      fill="currentColor"
+    />
+    <path
+      d="M28 15v18m0-18 8-2v7l-8 2"
+      fill="none"
+      stroke="#faf9f5"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <ellipse cx="23" cy="34" rx="6" ry="4" fill="#faf9f5" />
+  </svg>
+</b>
+ <small>GOOD DAYS</small>
                     </div>
                   </div>
                   <span className="hero-sticker">just press play ♡</span>
@@ -958,8 +979,24 @@ export default function MusicApp({ screen }: { screen: Screen }) {
         <aside className="right-column">
           <section className="daily-note">
             <span className="eyebrow">TODAY’S MOOD</span>
-            <span className="daily-flower">✿</span>
-            <h3>きょうは、どんな気分？</h3>
+            <span className="daily-flower" aria-hidden="true">
+  <svg viewBox="0 0 48 54" width="70" height="78">
+    <path
+      d="M24 3C13 3 4 7 4 17c0 13 12 29 20 34 8-5 20-21 20-34C44 7 35 3 24 3Z"
+      fill="currentColor"
+    />
+    <path
+      d="M28 15v18m0-18 8-2v7l-8 2"
+      fill="none"
+      stroke="#faf9f5"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <ellipse cx="23" cy="34" rx="6" ry="4" fill="#faf9f5" />
+  </svg>
+</span>
+<h3>きょうは、どんな気分？</h3>
             <p>
               気分にぴったりの音楽を
               <br />
@@ -968,22 +1005,7 @@ export default function MusicApp({ screen }: { screen: Screen }) {
             <Link href="/search">音楽をさがす ↗</Link>
             <span className="note-stamp">have a lovely day</span>
           </section>
-          <section className="community-card">
-            <div className="aside-title">
-              <h3>音楽好きの仲間たち</h3>
-              <span>♧</span>
-            </div>
-            {people.map((person) => (
-              <div className="mini-person" key={person.id}>
-                <span className={`avatar ${person.color}`}>{person.icon}</span>
-                <div>
-                  <b>{person.name}</b>
-                  <small>@{person.handle}</small>
-                </div>
-              </div>
-            ))}
-            <Link href="/following">みんなを見てみる →</Link>
-          </section>
+  
           <section className="little-memo">
             <span>✧ 小さな使い方メモ</span>
             <p>
