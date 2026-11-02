@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { Track } from "@/lib/workshop/data";
 import {
   loadSpotifyEmbedApi,
@@ -36,6 +36,8 @@ function SpotifyDeck({
   const controller = useRef<SpotifyController | null>(null);
   const startPosition = useRef<number | null>(null);
   const wasPlaying = useRef(false);
+  const playTimer = useRef<number | null>(null);
+  const playRequested = useRef(false);
   const playerId = useId();
 
   const [open, setOpen] = useState(false);
@@ -43,9 +45,33 @@ function SpotifyDeck({
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  const [starting, setStarting] = useState(false);
+  const [needsDirectPlay, setNeedsDirectPlay] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [appleMobile, setAppleMobile] = useState(false);
 
   useEffect(() => {
-if (!open) return;
+    setAppleMobile(
+      /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
+    );
+  }, []);
+
+  const clearPlayTimer = useCallback(() => {
+    if (playTimer.current !== null) {
+      window.clearTimeout(playTimer.current);
+      playTimer.current = null;
+    }
+  }, []);
+
+  const cancelPlayRequest = useCallback(() => {
+    clearPlayTimer();
+    playRequested.current = false;
+    setStarting(false);
+  }, [clearPlayTimer]);
+
+  useEffect(() => {
+    if (!open) return;
     let active = true;
     let created: SpotifyController | null = null;
 
@@ -62,6 +88,7 @@ if (!open) return;
     function onOtherPlayer(event: Event) {
       if ((event as CustomEvent<string>).detail === playerId) return;
 
+      cancelPlayRequest();
       controller.current?.pause();
       wasPlaying.current = false;
       startPosition.current = null;
@@ -72,6 +99,7 @@ if (!open) return;
     function onNativePlay(event: Event) {
       if (!(event.target instanceof HTMLAudioElement)) return;
 
+      cancelPlayRequest();
       controller.current?.pause();
       wasPlaying.current = false;
       startPosition.current = null;
@@ -128,6 +156,11 @@ if (!open) return;
                 return;
               }
 
+              // Spotifyの通知で実際の再生開始を確認する。
+              cancelPlayRequest();
+              setNeedsDirectPlay(false);
+              setHasStarted(true);
+
               if (!wasPlaying.current) {
                 stopOtherPlayers();
               }
@@ -171,27 +204,47 @@ if (!open) return;
 
     return () => {
       active = false;
+      clearPlayTimer();
+      playRequested.current = false;
       window.clearTimeout(timer);
       window.removeEventListener("meloop:spotify-play", onOtherPlayer);
       document.removeEventListener("play", onNativePlay, true);
       created?.destroy();
       controller.current = null;
     };
-}, [open,track.id, playerId]);
+  }, [open, track.id, playerId, clearPlayTimer, cancelPlayRequest]);
+
   function play() {
-    if (!ready || !controller.current) return;
+    if (!ready || !controller.current || playing || playRequested.current) return;
 
     setError("");
+    setNeedsDirectPlay(false);
+    setStarting(true);
+    playRequested.current = true;
     startPosition.current = null;
+    clearPlayTimer();
+
+    // 再生指示が無音のまま終わった場合も、利用者に次の操作を伝える。
+    playTimer.current = window.setTimeout(() => {
+      playTimer.current = null;
+      if (!playRequested.current) return;
+      playRequested.current = false;
+      setStarting(false);
+      setNeedsDirectPlay(true);
+    }, 5000);
 
     try {
+      // ユーザーが針を離した操作の中で、そのまま再生を指示する。
       controller.current.play();
     } catch {
-      setError("再生できませんでした。公式プレイヤーでも確認してください。");
+      cancelPlayRequest();
+      setNeedsDirectPlay(true);
+      setError("針から再生を開始できませんでした。下のSpotifyの▶を押してください。");
     }
   }
 
   function pause() {
+    cancelPlayRequest();
     try {
       controller.current?.pause();
       wasPlaying.current = false;
@@ -209,7 +262,7 @@ if (!open) return;
         <RecordArm
           name={track.name}
           playing={playing}
-          disabled={!ready}
+          disabled={!ready || starting}
           onPlay={play}
           onPause={pause}
         />
@@ -229,7 +282,9 @@ if (!open) return;
   </button>
 ) : (
   <>
-    <p>{ready ? "針を動かして再生・停止" : "Spotifyを準備中…"}</p>
+    <p role="status">
+      {!ready ? "Spotifyを準備中…" : starting ? "再生開始を確認中…" : "針を動かして再生・停止"}
+    </p>
     <div className={styles.line}>
       <i style={{ width: `${progress}%` }} />
     </div>
@@ -246,6 +301,19 @@ if (!open) return;
 
   {open && (
   <div>
+    {ready && (needsDirectPlay || (appleMobile && !hasStarted)) && (
+      <p role="status" style={{
+        margin: "0 0 12px", padding: "12px 14px", borderRadius: 12,
+        border: "1px solid #d1dfc9", background: "#eef4e8",
+        color: "#435e46", fontSize: 14, lineHeight: 1.8,
+      }}>
+        {needsDirectPlay
+          ? "再生の開始を確認できませんでした。下のSpotifyの▶を直接押してみてください。"
+          : "iPhone・iPadで音が出ない場合は、最初に下のSpotifyの▶を直接押してください。"}
+        <br />
+        一度音が流れたら、針を戻して停止し、レコードへ動かして再生できるか試してください。
+      </p>
+    )}
     <div ref={container} />
     <p className="small-print">
       Spotify公式プレイヤーと連動しています。
