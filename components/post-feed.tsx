@@ -1,6 +1,6 @@
 "use client";
 
-import { loadNotificationPost } from "@/lib/notifications";
+import { isPostColor, postColorStyle, type PostColor } from "@/lib/post-colors";
 
 import UserAvatar from "@/components/user-avatar";
 
@@ -28,6 +28,7 @@ type FeedPost = {
   body: string;
   trackId: string;
   createdAt: string;
+  cardColor: PostColor;
 };
 
 type TrackInfo = {
@@ -263,7 +264,7 @@ export default function PostFeed({
       setTrackInfo({});
 
       try {
-const rows = postId ? await loadNotificationPost(postId) : await getPosts(authorId);
+const rows = await getPosts(authorId, postId);
         const following =
           tab === "following" ? await getMyFollowing() : [];
 
@@ -325,6 +326,7 @@ const rows = postId ? await loadNotificationPost(postId) : await getPosts(author
             body: row.body,
             trackId: row.spotify_track_id ?? "",
             createdAt: row.created_at,
+            cardColor: isPostColor(row.card_color) ? row.card_color : "white",
           };
         });
 
@@ -421,7 +423,7 @@ const rows = postId ? await loadNotificationPost(postId) : await getPosts(author
       {!loading &&
         !error &&
         posts.map((post) => (
-          <article className="post-card" key={post.id}>
+          <article className="post-card" key={post.id} style={postColorStyle(post.cardColor)}>
             <header className="post-author">
               <UserAvatar url={post.avatarUrl} emoji={post.avatarEmoji} name={post.name} />
 
@@ -469,8 +471,7 @@ const rows = postId ? await loadNotificationPost(postId) : await getPosts(author
                   spotifyUrl:
                     `https://open.spotify.com/track/${post.trackId}`,
                 }}
-                color="pink"
-              />
+color={post.cardColor}              />
             )}
             <PostReactions
               key={`${post.id}-${userId ?? "guest"}`}

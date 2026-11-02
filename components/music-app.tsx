@@ -1,5 +1,7 @@
 "use client";
 
+import { POST_COLORS, isPostColor, postColorStyle, type PostColor } from "@/lib/post-colors";
+
 import NotificationBell from "@/components/notification-bell";
 
 import MeloopLogo from "@/components/meloop-logo";
@@ -654,11 +656,14 @@ function Composer({ onPosted }: { onPosted: () => void }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [track, setTrack] = useState<Track | null>(null);
+  const [cardColor, setCardColor] = useState<PostColor>("white");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     try {
+      const savedColor = sessionStorage.getItem("meloop:post-color");
+      if (isPostColor(savedColor)) setCardColor(savedColor);
       const draft = sessionStorage.getItem("meloop:post-draft");
       if (draft) {
         setText(draft);
@@ -683,6 +688,7 @@ function Composer({ onPosted }: { onPosted: () => void }) {
   function saveDraft() {
     try {
       sessionStorage.setItem("meloop:post-draft", text);
+      sessionStorage.setItem("meloop:post-color", cardColor);
     } catch {
       setMessage("下書きを一時保存できませんでした。");
     }
@@ -698,7 +704,7 @@ function Composer({ onPosted }: { onPosted: () => void }) {
     setBusy(true);
     setMessage("");
     try {
-      await publishPost(text, track.id);
+      await publishPost(text, track.id, cardColor);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "投稿できませんでした。");
       setBusy(false);
@@ -706,10 +712,12 @@ function Composer({ onPosted }: { onPosted: () => void }) {
     }
     setText("");
     setTrack(null);
+    setCardColor("white");
     setMessage("投稿しました。");
     try {
       sessionStorage.removeItem("meloop:post-draft");
       sessionStorage.removeItem("meloop:selected-track");
+      sessionStorage.removeItem("meloop:post-color");
     } catch {
       // 保存自体は成功しているので、再投稿を促さない。
     }
@@ -744,6 +752,35 @@ function Composer({ onPosted }: { onPosted: () => void }) {
             maxLength={280}
             placeholder="この曲を好きな理由を、ひとこと。"
           />
+          <fieldset disabled={busy} style={{
+            border: "1px solid #dce3d6", borderRadius: 16,
+            padding: "12px 14px 14px", margin: "14px 0", minWidth: 0,
+          }}>
+            <legend style={{ padding: "0 7px", fontSize: 14 }}>投稿カードの背景色</legend>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {POST_COLORS.map((color) => (
+                <label key={color.value} style={{
+                  display: "inline-flex", alignItems: "center", gap: 7,
+                  padding: "9px 11px", borderRadius: 20, cursor: busy ? "not-allowed" : "pointer",
+                  background: color.background, color: "#405441", fontSize: 13,
+                  border: cardColor === color.value ? "2px solid #436957" : `2px solid ${color.border}`,
+                }}>
+                  <input type="radio" name="post-card-color" value={color.value}
+                    checked={cardColor === color.value}
+                    onChange={() => setCardColor(color.value)}
+                    style={{ width: 16, height: 16, margin: 0, padding: 0, accentColor: "#436957" }} />
+                  {color.label}
+                </label>
+              ))}
+            </div>
+            <div style={{ ...postColorStyle(cardColor),
+              marginTop: 12, padding: "13px 15px", borderRadius: 12, borderStyle: "solid",
+              borderWidth: 1, color: "#405441", whiteSpace: "pre-wrap", overflowWrap: "anywhere",
+            }}>
+              <small style={{ display: "block", marginBottom: 5 }}>カードの色のプレビュー</small>
+              {text.trim() || "この色で投稿カード全体を表示します。"}
+            </div>
+          </fieldset>
           <div className="composer-bottom">
             {!busy && (
               <Link href="/search" onClick={saveDraft}>
