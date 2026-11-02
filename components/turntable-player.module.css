@@ -285,3 +285,23 @@
     top: 95px;
   }
 }
+.white {
+  background: #fffefb;
+}
+.white .label {
+  background: #c7c4b2;
+}
+
+.green {
+  background: #e2eddf;
+}
+.green .label {
+  background: #a9c39b;
+}
+
+.purple {
+  background: #eee4f6;
+}
+.purple .label {
+  background: #bda5d0;
+}

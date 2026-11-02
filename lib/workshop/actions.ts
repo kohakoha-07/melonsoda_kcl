@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { isPostColor, type PostColor } from "@/lib/post-colors";
 
 export async function submitAuth(
   mode: "login" | "signup",
@@ -41,11 +42,13 @@ export async function submitAuth(
 export async function publishPost(
   text: string,
   spotifyTrackId: string,
+  cardColor: PostColor = "white",
 ): Promise<void> {
   const body = text.trim();
 
   if (!body) throw new Error("本文を入力してください。");
   if (!spotifyTrackId) throw new Error("曲を選んでください。");
+  if (!isPostColor(cardColor)) throw new Error("投稿の背景色を選び直してください。");
 
   const supabase = createClient();
 
@@ -61,20 +64,24 @@ export async function publishPost(
     author_id: user.id,
     spotify_track_id: spotifyTrackId,
     body,
+    card_color: cardColor,
   });
 
   if (error) throw new Error(error.message);
 }
 
-export async function getPosts(authorId?: string) {
+export async function getPosts(authorId?: string, postId?: string) {
   const supabase = createClient();
 
   let query = supabase
     .from("posts")
-    .select("id, author_id, spotify_track_id, body, created_at");
+    .select("id, author_id, spotify_track_id, body, created_at, card_color");
 
   if (authorId) {
     query = query.eq("author_id", authorId);
+  }
+  if (postId) {
+    query = query.eq("id", postId);
   }
 
   const { data, error } = await query
