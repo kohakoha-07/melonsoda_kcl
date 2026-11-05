@@ -704,7 +704,13 @@ function Composer({ onPosted }: { onPosted: () => void }) {
     setBusy(true);
     setMessage("");
     try {
-      await publishPost(text, track.id, cardColor);
+      await publishPost(
+       text,
+       track.id,
+       cardColor,
+       track.name,
+       track.artist,
+);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "投稿できませんでした。");
       setBusy(false);

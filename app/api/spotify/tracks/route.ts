@@ -27,7 +27,8 @@ export async function GET(request: Request) {
     const tracks = await getSpotifyTracks(ids);
 
     return NextResponse.json({ tracks });
-  } catch {
+  } catch (error) {
+     console.error("Spotify track lookup failed:", error);
     return NextResponse.json(
       {
         error:
