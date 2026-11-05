@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { MAX_AVATAR_UPLOAD_BYTES } from "@/lib/avatar-image";
 
 export const AVATAR_EMOJIS = ["🎧", "🎸", "🥁", "🎹", "🎤", "🎵", "🎶", "🖤", "🌟", "🌷", "🐈", "🐻"];
 export type AvatarChoice = {
@@ -41,8 +42,8 @@ export async function saveMyProfile(username: string, bio: string, avatar?: Avat
       };
       const extension = extensions[file.type];
       if (!extension) throw new Error("JPEG・PNG・WebPの画像を選んでください。");
-      if (file.size === 0 || file.size > 2 * 1024 * 1024) {
-        throw new Error("画像は2MB以下にしてください。");
+      if (file.size === 0 || file.size > MAX_AVATAR_UPLOAD_BYTES) {
+        throw new Error("保存用の画像が大きすぎます。プロフィール編集で画像を選び直してください。");
       }
       const path = `${auth.user.id}/${crypto.randomUUID()}.${extension}`;
       const { error } = await supabase.storage.from("avatars").upload(path, file, {

@@ -750,7 +750,7 @@ function Composer({ onPosted }: { onPosted: () => void }) {
             disabled={busy}
             required
             maxLength={280}
-            placeholder="この曲を好きな理由を、ひとこと。"
+            placeholder="ひとこと"
           />
           <fieldset disabled={busy} style={{
             border: "1px solid #dce3d6", borderRadius: 16,
