@@ -27,6 +27,8 @@ type FeedPost = {
   avatarEmoji: string;
   body: string;
   trackId: string;
+  trackName: string | null;
+  artistName: string | null;
   createdAt: string;
   cardColor: PostColor;
 };
@@ -325,17 +327,33 @@ const rows = await getPosts(authorId, postId);
             avatarEmoji: authorId ? avatars.get(authorId)?.emoji ?? "🎧" : "🎧",
             body: row.body,
             trackId: row.spotify_track_id ?? "",
+            trackName: row.track_name ?? null,
+            artistName: row.artist_name ?? null,
             createdAt: row.created_at,
             cardColor: isPostColor(row.card_color) ? row.card_color : "white",
           };
         });
 
         setPosts(feedPosts);
+        const savedInfo: Record<string, TrackInfo> = {};
+
+        for (const post of feedPosts) {
+  if (post.trackId && post.trackName) {
+    savedInfo[post.trackId] = {
+      id: post.trackId,
+      name: post.trackName,
+      artist: post.artistName ?? "",
+    };
+  }
+  }
+
+setTrackInfo(savedInfo);
         setLoading(false);
 
         const trackIds = [
           ...new Set(
             feedPosts
+               .filter((post) => !savedInfo[post.trackId])
               .map((post) => post.trackId)
               .filter((id) => /^[A-Za-z0-9]{22}$/.test(id)),
           ),
@@ -365,7 +383,12 @@ const rows = await getPosts(authorId, postId);
             info[track.id] = track;
           }
 
-          if (!cancelled) setTrackInfo(info);
+          if (!cancelled) {
+  setTrackInfo((current) => ({
+    ...current,
+    ...info,
+  }));
+}
         } catch (error) {
           if (!cancelled) {
             setTrackError(

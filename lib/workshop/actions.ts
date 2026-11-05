@@ -43,12 +43,16 @@ export async function publishPost(
   text: string,
   spotifyTrackId: string,
   cardColor: PostColor = "white",
+  trackName: string = "",
+  artistName: string = "",
 ): Promise<void> {
   const body = text.trim();
 
   if (!body) throw new Error("本文を入力してください。");
   if (!spotifyTrackId) throw new Error("曲を選んでください。");
-  if (!isPostColor(cardColor)) throw new Error("投稿の背景色を選び直してください。");
+  if (!isPostColor(cardColor)) {
+    throw new Error("投稿の背景色を選び直してください。");
+  }
 
   const supabase = createClient();
 
@@ -65,6 +69,8 @@ export async function publishPost(
     spotify_track_id: spotifyTrackId,
     body,
     card_color: cardColor,
+    track_name: trackName.trim() || null,
+    artist_name: artistName.trim() || null,
   });
 
   if (error) throw new Error(error.message);
@@ -75,7 +81,9 @@ export async function getPosts(authorId?: string, postId?: string) {
 
   let query = supabase
     .from("posts")
-    .select("id, author_id, spotify_track_id, body, created_at, card_color");
+    .select(
+  "id, author_id, spotify_track_id, body, created_at, card_color, track_name, artist_name",
+);
 
   if (authorId) {
     query = query.eq("author_id", authorId);

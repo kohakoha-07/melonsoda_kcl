@@ -87,7 +87,9 @@ export async function getSpotifyTracks(ids: string[]) {
         );
 
         if (!response.ok) {
-          throw new Error("Spotifyの曲情報を取得できませんでした。");
+          throw new Error(
+           `Spotifyの曲情報取得エラー: ${response.status}`
+        );
         }
 
         const track = await response.json();
