@@ -484,11 +484,24 @@ function Following() {
           {users.map((person) => (
             <Reveal key={person.user_id}>
               <article className="person-card">
-                <UserAvatar url={person.avatar_url} emoji={person.avatar_emoji}
-                  name={person.username || "ユーザー"} className="avatar large pink" />
+               <Link
+                  href={`/profile/${encodeURIComponent(person.user_id)}`}
+                  aria-label={`${person.username || "ユーザー"}のプロフィールを見る`}
+                >
+                  <UserAvatar
+                   url={person.avatar_url}
+                   emoji={person.avatar_emoji}
+                   name={person.username || "ユーザー"}
+                   className="avatar large pink"
+                 />
+               </Link>
 
-                <div>
-                  <h3>{person.username || "名前未設定"}</h3>
+  <div>
+    <h3>
+      <Link href={`/profile/${encodeURIComponent(person.user_id)}`}>
+        {person.username || "名前未設定"}
+      </Link>
+    </h3>
                   <p>{person.bio || "自己紹介はまだありません。"}</p>
                 </div>
 
