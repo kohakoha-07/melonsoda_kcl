@@ -39,7 +39,7 @@ export default function SpotifyApiCheckPage() {
           {
             uri: "spotify:track:22BqQe9mJTZzaPcnaUuwGI",
             width: "100%",
-            height: 352,
+            height: 152,
           },
           (created) => {
             if (!active) {
