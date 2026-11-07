@@ -422,9 +422,13 @@ const rows = await getPosts(authorId, postId);
 
       {!loading &&
         !error &&
-posts.slice(0, 1).map((post) => (          <article className="post-card" key={post.id} style={postColorStyle(post.cardColor)}>
-            <header className="post-author">
-              <UserAvatar url={post.avatarUrl} emoji={post.avatarEmoji} name={post.name} />
+posts.map((post) => (
+  <article
+    className="post-card"
+    key={post.id}
+    style={postColorStyle(post.cardColor)}
+  >
+    <header className="post-author">              <UserAvatar url={post.avatarUrl} emoji={post.avatarEmoji} name={post.name} />
 
               <div>
                 {post.authorId ? (
