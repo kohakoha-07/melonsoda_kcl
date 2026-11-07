@@ -111,11 +111,17 @@ export default function SpotifyApiCheckPage() {
     }
   }
 
-  return (
+   return (
     <main style={{ maxWidth: 700, margin: "0 auto", padding: 20 }}>
       <h1>針とSpotifyの連動確認</h1>
 
       <p role="status">{status}</p>
+
+      {!open && (
+        <button type="button" onClick={() => setOpen(true)}>
+          Spotifyを準備
+        </button>
+      )}
 
       <div className={`${styles.player} ${styles.blue}`}>
         <RecordArm
@@ -127,12 +133,6 @@ export default function SpotifyApiCheckPage() {
         />
 
         <div className={styles.info}>
-          {!open && (
-            <button type="button" onClick={() => setOpen(true)}>
-              Spotifyを準備
-            </button>
-          )}
-
           <p>
             準備できたら針をレコードへ動かしてください。
             音が出ない場合は、下のSpotifyの▶も試してください。
