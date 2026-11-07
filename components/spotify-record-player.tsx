@@ -258,6 +258,15 @@ function SpotifyDeck({
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
+      {!open && (
+  <button
+    type="button"
+    className="button soft"
+    onClick={() => setOpen(true)}
+  >
+    Spotifyを準備
+  </button>
+)}
       <div className={`${styles.player} ${styles[color] ?? styles.pink}`}>
         <RecordArm
           name={track.name}
@@ -272,15 +281,7 @@ function SpotifyDeck({
           <h3>{track.name}</h3>
           <p>{track.artist}</p>
 
-        {!open ? (
-  <button
-    type="button"
-    className="button soft"
-    onClick={() => setOpen(true)}
-  >
-    Spotifyを準備
-  </button>
-) : (
+        {open && (
   <>
     <p role="status">
       {!ready ? "Spotifyを準備中…" : starting ? "再生開始を確認中…" : "針を動かして再生・停止"}
