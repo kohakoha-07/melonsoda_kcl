@@ -40,8 +40,7 @@ export default function SpotifyApiCheckPage() {
         api.createController(
           container.current,
           {
-            uri: "spotify:track:22BqQe9mJTZzaPcnaUuwGI",
-            width: "100%",
+uri: "spotify:track:5JUj6RujNvWQ5QipHBKgZC",            width: "100%",
             height: 152,
           },
           (created) => {
