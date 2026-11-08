@@ -553,7 +553,29 @@ function AuthForm({ signup }: { signup: boolean }) {
 
   return (
     <section className="auth-card">
-      <span className="auth-flower">✿</span>
+<span className="auth-flower" aria-hidden="true">
+  <svg
+    width="72"
+    height="80"
+    viewBox="0 0 72 80"
+    fill="none"
+    style={{ display: "block", margin: "0 auto" }}
+  >
+    <path
+      d="M36 3C17 3 5 12 5 27c0 20 17 42 31 50 14-8 31-30 31-50C67 12 55 3 36 3Z"
+      fill="currentColor"
+    />
+    <path
+      d="M32 24v24m0-20 17-4v19"
+      stroke="#fffaf0"
+      strokeWidth="5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <ellipse cx="26" cy="49" rx="8" ry="6" fill="#fffaf0" />
+    <ellipse cx="43" cy="44" rx="8" ry="6" fill="#fffaf0" />
+  </svg>
+</span>
       <span className="eyebrow">WELCOME TO MELOOP</span>
       <h2>{signup ? "あなたの「好き」を、ここに。" : "おかえりなさい。"}</h2>
       <p>音楽の話をしよう。今日も、あなたのペースで。</p>
